@@ -1,0 +1,399 @@
+{
+  "version": 2,
+  "overlay": {
+    "x": 0,
+    "y": 0,
+    "width": 260,
+    "height": 720,
+    "bgColor": "#B3000000",
+    "cornerRadius": 12,
+    "padding": 8,
+    "opacity": 1,
+    "backgroundOpacity": 1,
+    "iconOpacity": 1,
+    "locked": true,
+    "followGame": false
+  },
+  "records": {
+    "iconSize": 48,
+    "maxCount": 15,
+    "comboMode": true,
+    "comboWindowMs": 120,
+    "recordMovement": true,
+    "showNeutralRow": false,
+    "repeatMerge": true,
+    "repeatWindowMs": 250,
+    "holdDisplay": "live",
+    "holdFormat": "seconds",
+    "framesPerSecond": 60,
+    "holdThresholdMs": 300,
+    "newestAtBottom": true,
+    "durationOnLeft": false,
+    "fade": true
+  },
+  "input": {
+    "gameProcess": [
+      "ZenlessZoneZero.exe"
+    ],
+    "foregroundOnly": true,
+    "controllerIconStyle": "auto",
+    "xinputPollHz": 250,
+    "triggerThreshold": 128,
+    "stickDeadzone": 0.35,
+    "stickMode": 8
+  },
+  "hotkeys": {
+    "toggleOverlay": "F8",
+    "toggleLock": "F9",
+    "openSettings": "F10",
+    "debugMode": "F11"
+  },
+  "profiles": {
+    "kbm": {
+      "bindings": [
+        {
+          "action": "dirUp",
+          "enabled": true,
+          "keys": [
+            "W"
+          ]
+        },
+        {
+          "action": "dirDown",
+          "enabled": true,
+          "keys": [
+            "S"
+          ]
+        },
+        {
+          "action": "dirLeft",
+          "enabled": true,
+          "keys": [
+            "A"
+          ]
+        },
+        {
+          "action": "dirRight",
+          "enabled": true,
+          "keys": [
+            "D"
+          ]
+        },
+        {
+          "action": "attack",
+          "enabled": true,
+          "keys": [
+            "MouseLeft"
+          ]
+        },
+        {
+          "action": "special",
+          "enabled": true,
+          "keys": [
+            "E"
+          ]
+        },
+        {
+          "action": "dodge",
+          "enabled": true,
+          "keys": [
+            "LShift",
+            "MouseRight"
+          ]
+        },
+        {
+          "action": "ultimate",
+          "enabled": true,
+          "keys": [
+            "Q"
+          ]
+        },
+        {
+          "action": "switchPrev",
+          "enabled": true,
+          "keys": [
+            "C"
+          ]
+        },
+        {
+          "action": "switchNext",
+          "enabled": true,
+          "keys": [
+            "Space"
+          ]
+        },
+        {
+          "action": "lockOn",
+          "enabled": true,
+          "keys": [
+            "MouseMiddle"
+          ]
+        },
+        {
+          "action": "agentSkill",
+          "enabled": true,
+          "keys": [
+            "R"
+          ]
+        },
+        {
+          "action": "chainLeft",
+          "enabled": true,
+          "keys": [
+            "Q",
+            "MouseLeft"
+          ]
+        },
+        {
+          "action": "chainRight",
+          "enabled": true,
+          "keys": [
+            "E",
+            "MouseRight"
+          ]
+        },
+        {
+          "action": "chainCancel",
+          "enabled": true,
+          "keys": [
+            "MouseMiddle"
+          ]
+        }
+      ]
+    },
+    "xbox": {
+      "bindings": [
+        {
+          "action": "dirUp",
+          "enabled": true,
+          "keys": [
+            "Up"
+          ]
+        },
+        {
+          "action": "dirDown",
+          "enabled": true,
+          "keys": [
+            "Down"
+          ]
+        },
+        {
+          "action": "dirLeft",
+          "enabled": true,
+          "keys": [
+            "Left"
+          ]
+        },
+        {
+          "action": "dirRight",
+          "enabled": true,
+          "keys": [
+            "Right"
+          ]
+        },
+        {
+          "action": "attack",
+          "enabled": true,
+          "keys": [
+            "XButton"
+          ]
+        },
+        {
+          "action": "dodge",
+          "enabled": true,
+          "keys": [
+            "AButton"
+          ]
+        },
+        {
+          "action": "special",
+          "enabled": true,
+          "keys": [
+            "YButton"
+          ]
+        },
+        {
+          "action": "ultimate",
+          "enabled": true,
+          "keys": [
+            "RT"
+          ]
+        },
+        {
+          "action": "switchPrev",
+          "enabled": true,
+          "keys": [
+            "LB"
+          ]
+        },
+        {
+          "action": "switchNext",
+          "enabled": true,
+          "keys": [
+            "RB"
+          ]
+        },
+        {
+          "action": "lockOn",
+          "enabled": true,
+          "keys": [
+            "R3"
+          ]
+        },
+        {
+          "action": "agentSkill",
+          "enabled": true,
+          "keys": [
+            "BButton"
+          ]
+        },
+        {
+          "action": "chainLeft",
+          "enabled": true,
+          "keys": [
+            "LB"
+          ]
+        },
+        {
+          "action": "chainRight",
+          "enabled": true,
+          "keys": [
+            "RB"
+          ]
+        },
+        {
+          "action": "chainCancel",
+          "enabled": true,
+          "keys": [
+            "AButton"
+          ]
+        }
+      ]
+    },
+    "ps": {
+      "bindings": [
+        {
+          "action": "dirUp",
+          "enabled": true,
+          "keys": [
+            "Up"
+          ]
+        },
+        {
+          "action": "dirDown",
+          "enabled": true,
+          "keys": [
+            "Down"
+          ]
+        },
+        {
+          "action": "dirLeft",
+          "enabled": true,
+          "keys": [
+            "Left"
+          ]
+        },
+        {
+          "action": "dirRight",
+          "enabled": true,
+          "keys": [
+            "Right"
+          ]
+        },
+        {
+          "action": "attack",
+          "enabled": true,
+          "keys": [
+            "Square"
+          ]
+        },
+        {
+          "action": "dodge",
+          "enabled": true,
+          "keys": [
+            "Cross"
+          ]
+        },
+        {
+          "action": "special",
+          "enabled": true,
+          "keys": [
+            "Triangle"
+          ]
+        },
+        {
+          "action": "ultimate",
+          "enabled": true,
+          "keys": [
+            "R2"
+          ]
+        },
+        {
+          "action": "switchPrev",
+          "enabled": true,
+          "keys": [
+            "L1"
+          ]
+        },
+        {
+          "action": "switchNext",
+          "enabled": true,
+          "keys": [
+            "R1"
+          ]
+        },
+        {
+          "action": "lockOn",
+          "enabled": true,
+          "keys": [
+            "R3"
+          ]
+        },
+        {
+          "action": "agentSkill",
+          "enabled": true,
+          "keys": [
+            "Circle"
+          ]
+        },
+        {
+          "action": "chainLeft",
+          "enabled": true,
+          "keys": [
+            "L2"
+          ]
+        },
+        {
+          "action": "chainRight",
+          "enabled": true,
+          "keys": [
+            "R1"
+          ]
+        },
+        {
+          "action": "chainCancel",
+          "enabled": true,
+          "keys": [
+            "Cross"
+          ]
+        }
+      ]
+    }
+  },
+  "iconOverrides": {},
+  "debug": {
+    "enabled": false,
+    "remember": false,
+    "rehearsalScript": "basic",
+    "loop": false
+  },
+  "ui": {
+    "settingsTopMost": true
+  },
+  "webOverlay": {
+    "enabled": false,
+    "hideLocalOverlay": false,
+    "port": 15965,
+    "fontScale": 1
+  }
+}

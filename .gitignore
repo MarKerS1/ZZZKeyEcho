@@ -1,0 +1,11 @@
+# 构建产物
+bin/
+obj/
+.vs/
+publish/
+*.user
+*.zip
+
+# 用户本地配置（绿色包每份独立，不入库）
+config.json
+

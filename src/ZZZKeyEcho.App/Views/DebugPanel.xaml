@@ -1,0 +1,62 @@
+<Window x:Class="ZZZKeyEcho.App.Views.DebugPanel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ZZZKeyEcho 调试面板"
+        Width="580"
+        Height="560"
+        WindowStartupLocation="CenterScreen">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16">
+            <TextBlock Text="调试模式"
+                       FontSize="16"
+                       FontWeight="Bold" />
+            <TextBlock x:Name="StatusText"
+                       Margin="0,6,0,0"
+                       TextWrapping="Wrap"
+                       Opacity="0.85" />
+            <TextBlock Text="已开启 · 悬浮窗强制显示 · 前台门控已解除 · 模拟按键只进入本程序引擎，不进入系统输入流"
+                       Margin="0,4,0,14"
+                       TextWrapping="Wrap"
+                       Opacity="0.6" />
+
+            <TextBlock Text="动作直触发"
+                       FontWeight="SemiBold" />
+            <WrapPanel x:Name="ActionPanel"
+                       Margin="0,6,0,14" />
+
+            <TextBlock Text="移动单独测试（点击按住 / 再点松开，可配合动作验证组合列）"
+                       FontWeight="SemiBold" />
+            <WrapPanel x:Name="MovementPanel"
+                       Margin="0,6,0,14" />
+
+            <TextBlock Text="长按模拟"
+                       FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,6,0,14">
+                <ComboBox x:Name="HoldActionBox"
+                          Width="200"
+                          ToolTip="选择要模拟长按的动作。" />
+                <TextBox x:Name="HoldSecondsBox"
+                         Width="60"
+                         Margin="10,0,0,0"
+                         ToolTip="按住多少秒（可填小数，例如 1.5）。"
+                         Text="0.8" />
+                <TextBlock Text="秒"
+                           Margin="6,0,0,0"
+                           VerticalAlignment="Center" />
+                <Button x:Name="HoldButton"
+                        Content="▶ 触发"
+                        ToolTip="模拟一次长按，用来确认计时有没有随按住时长增长、松开后定格。"
+                        Margin="12,0,0,0"
+                        Padding="12,4"
+                        Click="OnHoldClick" />
+            </StackPanel>
+
+            <TextBlock Text="诊断"
+                       FontWeight="SemiBold" />
+            <TextBlock x:Name="DiagnosticsText"
+                       Margin="0,6,0,0"
+                       Opacity="0.8" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>

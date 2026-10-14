@@ -1,0 +1,39 @@
+<Window x:Class="ZZZKeyEcho.App.Views.OnboardingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="欢迎使用 ZZZKeyEcho"
+        Width="560"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        Background="#FF1E1E22"
+        Foreground="#FFF0F0F0">
+    <StackPanel Margin="22">
+        <TextBlock Text="欢迎使用 ZZZKeyEcho"
+                   FontSize="20"
+                   FontWeight="SemiBold" />
+
+        <TextBlock Margin="0,8,0,0"
+                   TextWrapping="Wrap"
+                   Opacity="0.85"
+                   Text="悬浮窗已经在屏幕左上角就位。它只负责“显示你按了什么”，不会向游戏发送任何按键。" />
+
+        <TextBlock Text="快捷键" Margin="0,16,0,4" FontWeight="SemiBold" />
+        <TextBlock x:Name="HotkeyText" TextWrapping="Wrap" Opacity="0.85" />
+
+        <TextBlock Text="常用操作" Margin="0,16,0,4" FontWeight="SemiBold" />
+        <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                   Text="· 解锁后可以直接用鼠标拖动、拉伸悬浮窗；锁定后鼠标穿透，不影响游戏。&#10;· 游戏的按键映射、记录行为、外观都能在设置里实时调整。&#10;· 想换图标：设置 → 图标管理 → 导入 PNG；也可以直接把图片放到 assets/icons/custom/&lt;动作ID&gt;.png。&#10;· 游戏运行时悬浮窗会自动显示，退出游戏自动隐藏（可在设置里关闭）。" />
+
+        <TextBlock Text="下一步" Margin="0,16,0,4" FontWeight="SemiBold" />
+        <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                   Text="建议先按上面的快捷键打开设置，确认按键映射和你的游戏按键一致；再按调试模式热键，在不进游戏的情况下试一遍所有动作。" />
+
+        <Button Content="开始使用"
+                Click="OnClose"
+                HorizontalAlignment="Right"
+                Margin="0,18,0,0"
+                Padding="18,6" />
+    </StackPanel>
+</Window>

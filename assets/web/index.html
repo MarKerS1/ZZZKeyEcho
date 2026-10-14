@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>ZZZKeyEcho 浏览器源</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: transparent; overflow: hidden;
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif; user-select: none; }
+  #root { display: flex; flex-direction: column; gap: 4px; padding: var(--pad); box-sizing: border-box;
+    background: var(--bg); border-radius: var(--radius); height: 100%; overflow-y: auto;
+    scrollbar-width: none; }
+  #root::-webkit-scrollbar { display: none; }
+  .row { display: flex; align-items: center; gap: 6px; opacity: var(--iconOpacity);
+    border-bottom: 1px solid rgba(255, 255, 255, .6); padding-bottom: 4px; }
+  .row.right .badges { order: 3; margin-left: auto; }
+  .row.right .icons { order: 1; }
+  .row.right .spacer { order: 2; flex: 1; }
+  .row.left .badges { order: 1; }
+  .row.left .icons { order: 3; margin-left: auto; }
+  .row.left .spacer { order: 2; flex: 1; }
+  .badges { display: flex; align-items: center; gap: 6px; }
+  .count { font-size: calc(16px * var(--fontScale)); font-weight: 700; color: #fff;
+    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 4px #000; }
+  .time { font-size: calc(14px * var(--fontScale)); color: #e8e8e8;
+    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 4px #000; }
+  .icons { display: flex; align-items: center; }
+  .icons img { width: var(--iconSize); height: var(--iconSize); object-fit: contain; margin: 1px; }
+  .plus { color: #f2f2f2; font-size: calc(18px * var(--fontScale)); font-weight: 700; margin: 0 5px;
+    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 4px #000; }
+  .neutral { opacity: .7; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const root = document.getElementById('root');
+let lastJson = '';
+
+function esc(text) {
+  return text.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function iconHtml(files) {
+  return files.map(f => `<img src="/icons/${encodeURIComponent(f)}" alt="">`).join('');
+}
+
+async function tick() {
+  try {
+    const response = await fetch('/state', { cache: 'no-store' });
+    const text = await response.text();
+    if (text === lastJson) { return; }
+    lastJson = text;
+    render(JSON.parse(text));
+  } catch (e) { /* 服务未就绪时忽略 */ }
+}
+
+function render(state) {
+  const s = state.settings;
+  root.style.setProperty('--bg', withOpacity(s.background, s.backgroundOpacity));
+  root.style.setProperty('--iconOpacity', s.iconOpacity);
+  root.style.setProperty('--iconSize', s.iconSize + 'px');
+  root.style.setProperty('--fontScale', s.fontScale);
+  root.style.setProperty('--radius', (s.cornerRadius ?? 12) + 'px');
+  root.style.setProperty('--pad', (s.padding ?? 8) + 'px');
+
+  const rows = s.newestAtBottom ? state.records : state.records.slice().reverse();
+  root.innerHTML = rows.map(r => {
+    const side = s.durationOnLeft ? 'left' : 'right';
+    const badges = `${r.count > 1 ? `<span class="count">×${r.count}</span>` : ''}${r.time ? `<span class="time">${esc(r.time)}</span>` : ''}`;
+    const icons = iconHtml(r.movement)
+      + (r.movement.length && r.actions.length ? '<span class="plus">+</span>' : '')
+      + iconHtml(r.actions);
+    return `<div class="row ${side}${r.neutral ? ' neutral' : ''}" style="opacity:${r.opacity * s.iconOpacity}">
+      <span class="badges">${side === 'right' ? badges : badges}</span>
+      <span class="spacer"></span>
+      <span class="icons">${icons}</span>
+    </div>`;
+  }).join('');
+
+  root.scrollTop = s.newestAtBottom ? root.scrollHeight : 0;
+}
+
+function withOpacity(color, opacity) {
+  const hex = (color || '#B3000000').replace('#', '');
+  let r, g, b, a;
+  if (hex.length === 8) {
+    a = parseInt(hex.slice(0, 2), 16) / 255; r = parseInt(hex.slice(2, 4), 16);
+    g = parseInt(hex.slice(4, 6), 16); b = parseInt(hex.slice(6, 8), 16);
+  } else {
+    a = 1; r = parseInt(hex.slice(0, 2), 16); g = parseInt(hex.slice(2, 4), 16); b = parseInt(hex.slice(4, 6), 16);
+  }
+  return `rgba(${r},${g},${b},${(a * opacity).toFixed(3)})`;
+}
+
+setInterval(tick, 50);
+tick();
+</script>
+</body>
+</html>

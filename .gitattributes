@@ -1,0 +1,7 @@
+# 仓库内统一以 LF 存储，检出时按平台自动处理
+* text=auto
+
+# 二进制文件：不做任何换行处理
+*.png binary
+*.ico binary
+*.zip binary

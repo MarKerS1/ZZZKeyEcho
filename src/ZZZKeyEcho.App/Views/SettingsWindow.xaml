@@ -1,0 +1,514 @@
+<Window x:Class="ZZZKeyEcho.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:config="clr-namespace:ZZZKeyEcho.Core.Config;assembly=ZZZKeyEcho.Core"
+        xmlns:controls="clr-namespace:ZZZKeyEcho.App.Controls"
+        Title="ZZZKeyEcho 设置"
+        Width="840"
+        Height="680"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="Section">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,14,0,6" />
+        </Style>
+        <Style TargetType="TextBlock" x:Key="Label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,5,10,5" />
+        </Style>
+        <Style TargetType="CheckBox" x:Key="Option">
+            <Setter Property="Margin" Value="0,5,18,5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="Swatch" TargetType="Button">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Margin" Value="0,0,4,4" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#66FFFFFF" />
+        </Style>
+
+        <DataTemplate x:Key="BindingRowTemplate">
+            <Border Padding="8,4" Margin="0,0,0,4" CornerRadius="6">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="#14FFFFFF" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Enabled}" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding HasConflict}" Value="True">
+                                <Setter Property="Background" Value="#44FFD54F" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <CheckBox Grid.Column="0" ToolTip="取消勾选＝这个动作不记录（按键保留，随时可以再打开）。" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock Grid.Column="1" Text="{Binding ActionName}" VerticalAlignment="Center" />
+
+                    <ItemsControl Grid.Column="2" ItemsSource="{Binding Chips}" VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#2AFFFFFF" CornerRadius="4" Padding="8,2" Margin="2">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Key}" VerticalAlignment="Center" />
+                                        <Button Content="×"
+                                                ToolTip="移除这个按键绑定。"
+                                                Command="{Binding RemoveCommand}"
+                                                Padding="4,0"
+                                                Margin="8,0,0,0"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Foreground="#FF9A9A" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="优先" Padding="8,2" Tag="{Binding ActionId}" Click="OnSetPrimaryClick" ToolTip="把该动作排到最前：一键多用时它会作为主图标显示" />
+                        <Button Content="＋" ToolTip="给这个动作再加一个按键：可以选择“捕获按键（直接按）”或“手动选择”。" Padding="10,2" Margin="6,0,0,0" Click="OnAddKeyClick" />
+                        <Button Content="▷ 测试" ToolTip="不用进游戏也能验证：注入一次该动作并观察悬浮窗（会自动开启调试模式）。" Padding="10,2" Margin="6,0,0,0" Click="OnTestActionClick" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0" Margin="10">
+        <TabItem Header="状态" ToolTip="总览：记录开关、运行时状态、性能自测。判断“为什么没记录”先看这一页。">
+            <StackPanel Margin="12">
+                <TextBlock Text="记录总开关" Style="{StaticResource Section}" />
+                <CheckBox x:Name="RecordingCheckBox" Content="记录输入并显示悬浮窗" ToolTip="总开关：关掉后停止记录并隐藏悬浮窗（热键、设置仍然可用）。" IsChecked="{Binding RecordingEnabled}" Margin="0,2,0,0" />
+                <TextBlock Text="运行时状态" Style="{StaticResource Section}" />
+                <TextBlock x:Name="StatusText" TextWrapping="Wrap" Opacity="0.85" />
+                <Button Content="性能自测"
+                        ToolTip="合成 4000 个输入事件测一遍引擎：看“平均多少微秒处理一个事件”，确认性能不是瓶颈。"
+                        Click="OnPerfTest"
+                        HorizontalAlignment="Left"
+                        Margin="0,10,0,0"
+                        Padding="14,4" />
+                <TextBlock x:Name="PerfText" Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.85" />
+                <TextBlock Text="提示：调试模式的开关在托盘菜单 / F11，调试面板里可注入模拟按键。"
+                           Margin="0,14,0,0"
+                           TextWrapping="Wrap"
+                           Opacity="0.6" />
+            </StackPanel>
+        </TabItem>
+
+        <TabItem Header="悬浮窗外观" ToolTip="尺寸、位置、颜色、透明度、锁定与自动隐藏。解锁后可以直接用鼠标拖动和拉伸悬浮窗。">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12">
+                    <TextBlock Text="尺寸与位置（解锁后可直接用鼠标拖动/拉伸悬浮窗）" Style="{StaticResource Section}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="宽度" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="0" Grid.Column="1" Minimum="120" Maximum="1920" Value="{Binding OverlayWidth}" ToolTip="悬浮窗宽度。解锁后也可以直接用鼠标拖右下角拉伸。" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="高度" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="1" Grid.Column="1" Minimum="120" Maximum="2160" Value="{Binding OverlayHeight}" ToolTip="悬浮窗高度。放在屏幕左侧时注意别挡住任务栏和血条区域。" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="X 坐标" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="2" Grid.Column="1" Minimum="-3840" Maximum="3840" Value="{Binding OverlayX}" ToolTip="悬浮窗左上角横坐标：0 是屏幕最左，多显示器时可以是负数。" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Y 坐标" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="3" Grid.Column="1" Minimum="-2160" Maximum="2160" Value="{Binding OverlayY}" ToolTip="悬浮窗左上角纵坐标：0 是屏幕最上沿。" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="图标大小" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="4" Grid.Column="1" Minimum="16" Maximum="128" Step="1" Value="{Binding IconSize}" Suffix="px" ToolTip="单个图标的显示尺寸（组合图标也按这个大小）。建议 36–56 px。" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="移到左上角" ToolTip="把悬浮窗贴到屏幕左上角（0,0），超出屏幕时会自动修正。" Padding="12,4" Tag="TL" Click="OnMoveToCorner" />
+                        <Button Content="移到左下角" ToolTip="把悬浮窗贴到屏幕左下角，自动避开任务栏。" Padding="12,4" Margin="8,0,0,0" Tag="BL" Click="OnMoveToCorner" />
+                        <Button Content="移到右上角" ToolTip="把悬浮窗贴到屏幕右上角（会避开屏幕右边缘）。" Padding="12,4" Margin="8,0,0,0" Tag="TR" Click="OnMoveToCorner" />
+                        <Button Content="移到右下角" ToolTip="把悬浮窗贴到屏幕右下角。" Padding="12,4" Margin="8,0,0,0" Tag="BR" Click="OnMoveToCorner" />
+                        <Button Content="测试可见性（闪烁 2 秒）" ToolTip="让悬浮窗边框闪两下，用来找到它当前的位置——锁定状态下也能看见。" Padding="12,4" Margin="16,0,0,0" Click="OnTestVisibility" />
+                    </StackPanel>
+
+                    <TextBlock Text="外观" Style="{StaticResource Section}" />
+                    <TextBlock Text="背景色（点击色块选择）" Style="{StaticResource Label}" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#000000" Tag="000000" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#1E1E1E" Tag="1E1E1E" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#303030" Tag="303030" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#5A5A5A" Tag="5A5A5A" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#909090" Tag="909090" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#FFFFFF" Tag="FFFFFF" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#7F1D1D" Tag="7F1D1D" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#E5484D" Tag="E5484D" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#B45309" Tag="B45309" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#F59E0B" Tag="F59E0B" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#166534" Tag="166534" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#22C55E" Tag="22C55E" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#0E7490" Tag="0E7490" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#22D3EE" Tag="22D3EE" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#1D4ED8" Tag="1D4ED8" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#60A5FA" Tag="60A5FA" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#6D28D9" Tag="6D28D9" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#A78BFA" Tag="A78BFA" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#BE185D" Tag="BE185D" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#F472B6" Tag="F472B6" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#0F172A" Tag="0F172A" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#78350F" Tag="78350F" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#365314" Tag="365314" Click="OnColorSwatch" />
+                        <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#4C1D95" Tag="4C1D95" Click="OnColorSwatch" />
+                    </WrapPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="颜色代码" Style="{StaticResource Label}" />
+                        <TextBox Width="140" ToolTip="支持 #RRGGBB 或 #AARRGGBB；前两位是透明度，00 完全透明、FF 不透明。" Text="{Binding BackgroundColor, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="（#RRGGBB 或 #AARRGGBB）" Style="{StaticResource Label}" Margin="8,5,0,5" />
+                    </StackPanel>
+
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="背景不透明度" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="1" Decimals="2" Value="{Binding BackgroundOpacity}" ToolTip="只影响背景的透明度：0 时背景完全不可见，但窗口仍可点击、可拖动。" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="图标不透明度" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="1" Decimals="2" Value="{Binding IconOpacity}" ToolTip="只影响图标与文字的透明度：打游戏时调低一点，视线不会被遮挡。" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="圆角" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="60" Step="1" Value="{Binding CornerRadius}" Suffix="px" ToolTip="悬浮窗四角圆角半径，0 就是直角。" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="内边距" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="3" Grid.Column="1" Minimum="0" Maximum="60" Step="1" Value="{Binding Padding}" Suffix="px" ToolTip="内容与窗口边缘的距离：调大一点，图标不会贴着边框。" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <CheckBox Content="锁定（点击穿透、不抢游戏焦点、不可移动）" ToolTip="锁定后鼠标穿透悬浮窗，点到它也不会把游戏切到后台；点击设置里的“解锁”或按热键再拖动。" Style="{StaticResource Option}" IsChecked="{Binding Locked}" />
+                        <CheckBox Content="自动跟随游戏显示/隐藏" ToolTip="检测到游戏进程时自动显示，游戏退出后自动隐藏（进程名在「系统」页设置）。" Style="{StaticResource Option}" IsChecked="{Binding FollowGame}" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="记录行为" ToolTip="决定悬浮窗“显示什么、怎么合并、计时怎么算”。所有改动立刻生效，不需要保存。">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12">
+                    <TextBlock Text="显示" Style="{StaticResource Section}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="条数上限" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="0" Grid.Column="1" Minimum="1" Maximum="60" Step="1" Value="{Binding MaxCount}" Suffix="条" ToolTip="悬浮窗最多保留多少条记录，超出会丢弃最旧的（1–60）。" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="合并时间窗口" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="1" Grid.Column="1" Minimum="50" Maximum="2000" Step="10" Value="{Binding RepeatWindowMs}" Suffix="ms" ToolTip="同一按键两次按下间隔小于这个值就继续累计 ×N；超过它才算新的一条记录。键盘连点感觉太粘就调小。" />
+                    </Grid>
+
+                    <CheckBox Content="连按合并（同一键连续按累计 ×N；按住超过「合并时间窗口」或按了其他键即断开成独立记录）" ToolTip="关掉后每一次按下都会单独成行，适合逐帧复盘。" Style="{StaticResource Option}" IsChecked="{Binding RepeatMerge}" Margin="0,8,0,0" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <CheckBox Content="移动单独成行（左侧列持续记录）" ToolTip="打开后左侧列会持续记录移动方向（含斜向、转圈）。关掉则移动只在和动作组合时出现。" Style="{StaticResource Option}" IsChecked="{Binding RecordMovement}" />
+                        <CheckBox Content="显示中立行（Ⓝ，回中占一行）" ToolTip="松开所有方向键时插一行中立记录。绝区零的移动没有“回中”概念，一般保持关闭。" Style="{StaticResource Option}" IsChecked="{Binding ShowNeutralRow}" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <CheckBox Content="组合键（移动 + 操作合并为一行并用 + 连接）" ToolTip="同时按住的移动与动作显示在同一行，用 + 连接。" Style="{StaticResource Option}" IsChecked="{Binding ComboMode}" />
+                        <TextBlock Text="组合窗口" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Width="240" Minimum="30" Maximum="500" Step="10" Value="{Binding ComboWindowMs}" Suffix="ms" ToolTip="按下动作的那一刻，多久之内刚松开的方向仍然算作这次组合的一部分（默认 120ms，调大更容易出斜向）。" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <CheckBox Content="新记录从底部进入" ToolTip="新记录出现在列表下方（输入回放常用顺序）。关掉则新记录从顶部进入。" Style="{StaticResource Option}" IsChecked="{Binding NewestAtBottom}" />
+                        <CheckBox Content="旧记录淡出" ToolTip="越旧的记录越透明，方便一眼看到最新输入。" Style="{StaticResource Option}" IsChecked="{Binding Fade}" />
+                        <TextBlock Text="计时器位置" Style="{StaticResource Label}" Margin="0,5,8,5" />
+                        <ComboBox Width="110"
+                                  ToolTip="计时与“×N”放在哪一侧：右侧＝图标在左；左侧＝时间、次数贴左边，图标贴右边。"
+                                  SelectedValue="{Binding DurationOnLeft}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="右侧" Tag="False" />
+                            <ComboBoxItem Content="左侧" Tag="True" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <TextBlock Text="长按计时" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="显示方式" Style="{StaticResource Label}" />
+                        <ComboBox Width="140"
+                                  ToolTip="实时计时＝按住时数字一直涨；仅超阈值＝超过下面的阈值才显示；不显示＝只记录不显示时长。"
+                                  SelectedValue="{Binding HoldDisplay}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="实时计时" Tag="{x:Static config:HoldDisplayMode.Live}" />
+                            <ComboBoxItem Content="仅超阈值" Tag="{x:Static config:HoldDisplayMode.Threshold}" />
+                            <ComboBoxItem Content="不显示" Tag="{x:Static config:HoldDisplayMode.Off}" />
+                        </ComboBox>
+                        <TextBlock Text="长按判定阈值" Style="{StaticResource Label}" Margin="16,5,10,5" />
+                        <controls:NumericSlider Width="240" Minimum="50" Maximum="2000" Step="50" Value="{Binding HoldThresholdMs}" Suffix="ms" ToolTip="配合「仅超阈值」使用：按住超过这个时长才开始显示计时。" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock Text="计时格式" Style="{StaticResource Label}" />
+                        <ComboBox Width="170"
+                                  ToolTip="计时单位：秒（0.000s）或帧（按下面的帧率换算）。"
+                                  SelectedValue="{Binding HoldFormat}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="秒（0.4s）" Tag="{x:Static config:HoldTimeFormat.Seconds}" />
+                            <ComboBoxItem Content="帧（24f）" Tag="{x:Static config:HoldTimeFormat.Frames}" />
+                        </ComboBox>
+                        <TextBlock Text="帧率" Style="{StaticResource Label}" Margin="16,5,10,5" />
+                        <controls:NumericSlider Width="240" Minimum="1" Maximum="480" Step="1" Value="{Binding FramesPerSecond}" Suffix="fps" ToolTip="帧显示的换算帧率：绝区零按 60 填即可；改成 24 就得到「24f」这类读数。" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="按键配置" ToolTip="键鼠 / Xbox / PS 三套映射分别绑定。取消勾选＝该动作不记录；黄底行＝与其他动作冲突，用「优先」决定主图标。">
+            <DockPanel Margin="12">
+                <TabControl>
+                    <TabItem Header="键鼠" ToolTip="键盘与鼠标的按键映射。默认：WASD 移动、鼠标左键普通攻击、E 强化特殊技、Shift / 鼠标右键闪避、Q 终结技。">
+                        <DockPanel Margin="8">
+                            <Button DockPanel.Dock="Top" Content="恢复默认映射" ToolTip="把键鼠映射恢复成默认值，Xbox / PS 页不受影响。" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8" Click="OnRestoreKbm" />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding KbmProfile.Rows}" ItemTemplate="{StaticResource BindingRowTemplate}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="Xbox" ToolTip="Xbox 手柄映射。左摇杆默认负责移动（按方向计算），按键对应 X / A / Y / RT 等。">
+                        <DockPanel Margin="8">
+                            <Button DockPanel.Dock="Top" Content="恢复默认映射" ToolTip="把 Xbox 映射恢复成默认值，键鼠 / PS 页不受影响。" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8" Click="OnRestoreXbox" />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding XboxProfile.Rows}" ItemTemplate="{StaticResource BindingRowTemplate}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="PS" ToolTip="DualSense / DualShock 4 映射（走 HID 直读时生效）。若手柄被 Steam 输入接管，先在 Steam 里关闭对应支持。">
+                        <DockPanel Margin="8">
+                            <Button DockPanel.Dock="Top" Content="恢复默认映射" ToolTip="把 PS 映射恢复成默认值，键鼠 / Xbox 页不受影响。" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,8" Click="OnRestorePs" />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding PsProfile.Rows}" ItemTemplate="{StaticResource BindingRowTemplate}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+            </DockPanel>
+        </TabItem>
+
+        <TabItem Header="图标管理" ToolTip="把内置图形换成你自己的 PNG。导入的图保存为 assets/icons/custom/动作ID.png，不影响内置素材；「恢复内置」只是删掉覆盖文件。">
+            <DockPanel Margin="12">
+                <TextBlock DockPanel.Dock="Top"
+                           TextWrapping="Wrap"
+                           Opacity="0.75"
+                           Margin="0,0,0,8"
+                           Text="替换方式：导入的 PNG 会保存为 assets/icons/custom/动作ID.png（不会影响内置素材），「恢复内置」只是删除该覆盖文件。切人/连携在未替换时由支援技 + 角标自动合成。" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding IconRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#14FFFFFF" CornerRadius="6" Padding="8,4" Margin="0,0,0,4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Image Grid.Column="0" Source="{Binding Preview}" Width="40" Height="40" Stretch="Uniform" Margin="0,0,10,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding ActionName}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="{Binding CustomFileName}" VerticalAlignment="Center" Opacity="0.6" />
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="导入 PNG 替换" ToolTip="选择一张 PNG 作为该动作的图标；建议正方形、128×128 左右，会保存到 assets/icons/custom/。" Padding="10,2" Click="OnImportIconClick" />
+                                            <Button Content="恢复内置" ToolTip="删除该动作的自定义图标，恢复成内置图形。切人/连携等组合图标是自动合成的，不需要单独替换。" Padding="10,2" Margin="6,0,0,0" Click="OnRestoreIconClick" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </TabItem>
+
+        <TabItem Header="系统" ToolTip="全局热键、开机自启、手柄参数、输入过滤，以及配置与图标文件的导入导出。">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12">
+                    <TextBlock Text="全局热键（仅支持键盘/鼠标；点「改键」后按下目标按键即可）" Style="{StaticResource Section}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="170" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <CheckBox Grid.Row="0" Grid.Column="0" ToolTip="取消勾选＝停用该热键（不会影响别的热键）。" Style="{StaticResource Option}" IsChecked="{Binding ToggleOverlayHotkeyEnabled}" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="显示 / 隐藏悬浮窗" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding ToggleOverlayHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="0" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleOverlayHotkey" Click="OnChangeHotkeyClick" />
+
+                        <CheckBox Grid.Row="1" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ToggleLockHotkeyEnabled}" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="锁定 / 解锁" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding ToggleLockHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="1" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleLockHotkey" Click="OnChangeHotkeyClick" />
+
+                        <CheckBox Grid.Row="2" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding OpenSettingsHotkeyEnabled}" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="打开设置" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding OpenSettingsHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="2" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="OpenSettingsHotkey" Click="OnChangeHotkeyClick" />
+
+                        <CheckBox Grid.Row="3" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding DebugModeHotkeyEnabled}" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="调试模式" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding DebugModeHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="3" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="DebugModeHotkey" Click="OnChangeHotkeyClick" />
+                    </Grid>
+                    <TextBlock x:Name="HotkeysStatusText" Margin="0,8,0,0" Opacity="0.85" TextWrapping="Wrap" />
+
+                    <TextBlock Text="启动与窗口" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox Content="开机自启" ToolTip="把本程序的启动项写进当前用户的注册表（不需要管理员权限，随时可关掉）。" Style="{StaticResource Option}" IsChecked="{Binding StartWithWindows}" />
+                        <CheckBox Content="设置窗口置顶" ToolTip="让设置窗口始终显示在游戏上方，方便边打边调。" Style="{StaticResource Option}" IsChecked="{Binding SettingsTopMost}" />
+                    </StackPanel>
+
+                    <TextBlock Text="手柄" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="图标风格" Style="{StaticResource Label}" />
+                        <ComboBox Width="170"
+                                  ToolTip="手柄图标画成 Xbox 还是 PS 布局。自动＝按实际通道判断（HID 直读的 DualSense 会显示 PS 布局）。"
+                                  SelectedValue="{Binding ControllerIconStyle}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="自动（按实际通道）" Tag="{x:Static config:IconStyle.Auto}" />
+                            <ComboBoxItem Content="Xbox 布局" Tag="{x:Static config:IconStyle.Xbox}" />
+                            <ComboBoxItem Content="PS 布局" Tag="{x:Static config:IconStyle.Ps}" />
+                        </ComboBox>
+                        <TextBlock Text="（XInput 通道无法区分手柄品牌时使用）" Style="{StaticResource Label}" Margin="10,5,0,5" Opacity="0.7" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock Text="摇杆死区" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Width="300" Minimum="0.05" Maximum="0.9" Decimals="2" Value="{Binding StickDeadzone}" ToolTip="摇杆死区：小于这个比例不算移动。默认 0.35，摇杆漂移就调大一点。" />
+                    </StackPanel>
+
+                    <TextBlock Text="输入过滤" Style="{StaticResource Section}" />
+                    <CheckBox Content="仅在游戏前台时记录" ToolTip="只有在下面的进程名处于前台时才记录，避免把桌面上的操作也画出来。调试模式会自动解除这个限制。" Style="{StaticResource Option}" IsChecked="{Binding ForegroundOnly}" />
+                    <TextBlock Text="游戏进程名（多个用逗号分隔）" Style="{StaticResource Label}" />
+                    <TextBox Text="{Binding GameProcessText, UpdateSourceTrigger=PropertyChanged}" ToolTip="国际服/国服进程名不同，用英文逗号分隔多个；改名后自动跟随游戏也按这个列表判断。" />
+
+                    <TextBlock Text="调试模式" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox Content="开启调试模式（前台门控解除 + 调试面板）" ToolTip="在桌面也能记录输入，方便不进游戏验证映射；调试面板可以注入模拟按键。" Style="{StaticResource Option}" IsChecked="{Binding DebugMode}" />
+                        <CheckBox Content="记住调试模式（重启后仍生效）" ToolTip="不勾选时每次启动都会回到关闭状态，避免忘记关掉。" Style="{StaticResource Option}" IsChecked="{Binding DebugRemember}" />
+                    </StackPanel>
+
+                    <TextBlock Text="配置与图标文件" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="打开配置目录" ToolTip="在资源管理器里定位到 config.json（程序同目录）。" Padding="12,4" Click="OnOpenConfigFolder" />
+                        <Button Content="打开图标目录" ToolTip="打开 assets/icons，custom 子目录里放的就是你替换的图标。" Padding="12,4" Margin="8,0,0,0" Click="OnOpenIconsFolder" />
+                        <Button Content="导出配置" ToolTip="把当前全部设置导出成一个 json，方便备份或分享给朋友。" Padding="12,4" Margin="8,0,0,0" Click="OnExportConfig" />
+                        <Button Content="导入配置" ToolTip="从 json 文件恢复设置（会覆盖当前配置）。" Padding="12,4" Margin="8,0,0,0" Click="OnImportConfig" />
+                        <Button Content="重置全部" ToolTip="把设置恢复成默认值（已替换的图标文件不会被删除）。" Padding="12,4" Margin="8,0,0,0" Click="OnResetConfig" />
+                    </StackPanel>
+                    <TextBlock x:Name="FilesStatusText" Margin="0,8,0,0" Opacity="0.8" TextWrapping="Wrap" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="OBS 输出" ToolTip="给 OBS / 录屏软件用的网页版悬浮窗：用浏览器源加载，背景透明、可自由缩放，主播端和观众看到的是同一份数据。">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12">
+                    <TextBlock Text="浏览器源（推荐）" Style="{StaticResource Section}" />
+                    <CheckBox Content="开启网页输出（仅本机 127.0.0.1，不联网）"
+                              ToolTip="在程序内起一个本地小服务，把悬浮窗内容以网页形式提供；只在 127.0.0.1 监听，局域网和互联网都访问不到。"
+                              Style="{StaticResource Option}"
+                              IsChecked="{Binding WebOverlayEnabled}" />
+                    <CheckBox Content="隐藏本地悬浮窗（只看网页输出，专心操作）"
+                              ToolTip="勾上后屏幕上不再显示悬浮窗，但记录照常进行、网页端照常更新；托盘图标和热键仍然可用，随时可以取消勾选恢复。适合直播时用 OBS 浏览器源、又不想让自己分神的场景。"
+                              Style="{StaticResource Option}"
+                              IsChecked="{Binding HideLocalOverlay}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="端口" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Width="260" Minimum="1024" Maximum="65535" Step="1" Value="{Binding WebOverlayPort}" ToolTip="本地服务端口，改完立即重启服务；若被占用换一个（例如 15966）。" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="网页字号" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Width="260" Minimum="0.5" Maximum="2" Decimals="2" Value="{Binding WebOverlayFontScale}" ToolTip="只影响网页端 ×N 与计时文字的大小（图标大小跟随上面的「图标大小」设置）。" />
+                    </StackPanel>
+
+                    <TextBlock Text="地址" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="WebUrlBox" Width="320" IsReadOnly="True" ToolTip="把这个地址粘到 OBS 浏览器源的 URL 里。" />
+                        <Button Content="复制网址" Padding="12,4" Margin="8,0,0,0" Click="OnCopyWebUrl" ToolTip="复制到剪贴板，然后粘进 OBS 浏览器源的 URL。" />
+                        <Button Content="在浏览器中预览" Padding="12,4" Margin="8,0,0,0" Click="OnOpenWebUrl" ToolTip="先用浏览器看一眼效果（浏览器里背景会显示成白色，属正常现象）。" />
+                    </StackPanel>
+
+                    <TextBlock Text="OBS 设置步骤" Style="{StaticResource Section}" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+                        <Run Text="1. 勾选上面的「开启网页输出」，记下地址。" /><LineBreak />
+                        <Run Text="2. OBS → 来源 → 加号 → 「浏览器」→ 名称随便（例如 ZZZ 输入）→ URL 粘贴上面的地址。" /><LineBreak />
+                        <Run Text="3. 宽高填成和悬浮窗一致（当前 " /><Run x:Name="ObsSizeRun" Text="260 × 720" /><Run Text="），勾「使用自定义帧率」并填 60。" /><LineBreak />
+                        <Run Text="4. 把它拖到游戏源上方：浏览器源背景透明，不会挡住游戏画面。" /><LineBreak />
+                        <Run Text="5. 想让观众看的位置/大小不同，直接在 OBS 里拖这个源，不影响你屏幕上的悬浮窗。" />
+                    </TextBlock>
+
+                    <TextBlock Text="说明" Style="{StaticResource Section}" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                               Text="· 网页端沿用悬浮窗的配色、图标大小、透明度、计时器左右位置等设置，改完 1 秒内生效。&#10;· 你屏幕上的悬浮窗仍是原生窗口（圆角、半透明、鼠标穿透），和观众看到的内容一致。&#10;· 图标同样取自 assets/icons，替换图标后网页端会自动使用新图。&#10;· 这是目前唯一能同时做到「背景透明 + 主播观众一致 + 不依赖窗口采集」的方式。" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
+
+        <TextBlock x:Name="CaptureText"
+                   Grid.Row="1"
+                   Visibility="Collapsed"
+                   Margin="14,0,14,10"
+                   Foreground="#FFB86C"
+                   FontWeight="SemiBold"
+                   TextWrapping="Wrap" />
+    </Grid>
+</Window>

@@ -1,0 +1,189 @@
+<Window x:Class="ZZZKeyEcho.App.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:rendering="clr-namespace:ZZZKeyEcho.App.Rendering"
+        Title="ZZZKeyEcho 悬浮窗"
+        Width="260"
+        Height="720"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Topmost="True"
+        ShowInTaskbar="True"
+        ShowActivated="False"
+        Background="Transparent"
+        PreviewMouseLeftButtonDown="OnRootPreviewMouseDown"
+        PreviewMouseMove="OnRootPreviewMouseMove"
+        PreviewMouseLeftButtonUp="OnRootPreviewMouseUp">
+    <Window.Resources>
+        <rendering:MovementIconsConverter x:Key="MovementIcons" />
+        <rendering:ActionIconsConverter x:Key="ActionIcons" />
+        <rendering:HoldTextConverter x:Key="HoldText" />
+        <rendering:CountBadgeConverter x:Key="CountBadge" />
+        <rendering:PlusVisibilityConverter x:Key="PlusVisibility" />
+        <rendering:DurationDockConverter x:Key="DurationDock" />
+        <rendering:DurationDockConverter x:Key="IconsDock" />
+        <rendering:DurationFlowConverter x:Key="DurationFlow" />
+        <DropShadowEffect x:Key="TextOutline" Color="Black" ShadowDepth="0" BlurRadius="3" Opacity="1" />
+    </Window.Resources>
+
+    <Border x:Name="Root"
+            Background="#B3000000"
+            CornerRadius="12"
+            Padding="8">
+        <Grid>
+            <ScrollViewer x:Name="RecordsScroller"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="RecordsHost">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderThickness="0,0,0,1"
+                                BorderBrush="#99FFFFFF"
+                                Padding="0,0,0,4"
+                                Opacity="{Binding DisplayOpacity}">
+                            <DockPanel Margin="0,4">
+                                <StackPanel DockPanel.Dock="{Binding Converter={StaticResource DurationDock}}"
+                                        Orientation="Horizontal"
+                                        FlowDirection="{Binding Converter={StaticResource DurationFlow}}"
+                                        Margin="6,0,6,0"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Count, Converter={StaticResource CountBadge}}"
+                                           Margin="0,0,6,0"
+                                           Effect="{StaticResource TextOutline}"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           Foreground="#FFFFFF"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding DisplayDurationMs, Converter={StaticResource HoldText}}"
+                                           Effect="{StaticResource TextOutline}"
+                                           Margin="0"
+                                           FontSize="14"
+                                           Foreground="#C8C8C8"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel DockPanel.Dock="{Binding Converter={StaticResource IconsDock}}"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <ItemsControl>
+                                    <ItemsControl.ItemsSource>
+                                        <MultiBinding Converter="{StaticResource MovementIcons}">
+                                            <Binding />
+                                            <Binding Path="MovementStamp" />
+                                        </MultiBinding>
+                                    </ItemsControl.ItemsSource>
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Image Source="{Binding Image}"
+                                                   Width="{Binding Size}"
+                                                   Height="{Binding Size}"
+                                                   Stretch="Uniform"
+                                                   Margin="1,0" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="+"
+                                           Effect="{StaticResource TextOutline}"
+                                           Margin="5,0"
+                                           FontSize="18"
+                                           FontWeight="Bold"
+                                           Foreground="#F2F2F2"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Visibility>
+                                        <MultiBinding Converter="{StaticResource PlusVisibility}">
+                                            <Binding />
+                                            <Binding Path="MovementStamp" />
+                                        </MultiBinding>
+                                    </TextBlock.Visibility>
+                                </TextBlock>
+
+                                <ItemsControl ItemsSource="{Binding Actions, Converter={StaticResource ActionIcons}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Image Source="{Binding Image}"
+                                                   Width="{Binding Size}"
+                                                   Height="{Binding Size}"
+                                                   Stretch="Uniform"
+                                                   Margin="1,0" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <Border />
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            </ScrollViewer>
+
+            <Border x:Name="Highlight"
+                    BorderBrush="#FFB86C"
+                    BorderThickness="3"
+                    CornerRadius="12"
+                    Opacity="0"
+                    IsHitTestVisible="False" />
+
+            <Rectangle x:Name="UnlockFrame"
+                       Visibility="Collapsed"
+                       Stroke="#FFB86C"
+                       StrokeThickness="2"
+                       StrokeDashArray="5 3"
+                       RadiusX="12"
+                       RadiusY="12"
+                       IsHitTestVisible="False" />
+
+            <Rectangle x:Name="DebugFrame"
+                       Visibility="Collapsed"
+                       Stroke="#FF4FC3F7"
+                       StrokeThickness="2"
+                       StrokeDashArray="6 4"
+                       RadiusX="12"
+                       RadiusY="12"
+                       IsHitTestVisible="False" />
+
+            <Border x:Name="DebugBadge"
+                    Visibility="Collapsed"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="8,6"
+                    Padding="8,2"
+                    CornerRadius="8"
+                    Background="#CC4FC3F7"
+                    IsHitTestVisible="False">
+                <TextBlock Text="调试模式"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Foreground="#FF102027" />
+            </Border>
+
+            <Thumb x:Name="ResizeGrip"
+                   Visibility="Collapsed"
+                   Width="22"
+                   Height="22"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom"
+                   Margin="0,0,2,2"
+                   Cursor="SizeNWSE"
+                   DragDelta="OnResizeGripDrag">
+                <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="#88FFB86C" CornerRadius="5" />
+                    </ControlTemplate>
+                </Thumb.Template>
+            </Thumb>
+        </Grid>
+    </Border>
+</Window>
