@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\ZZZKeyEcho.Core\ZZZKeyEcho.Core.csproj" />
@@ -34,7 +34,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Product>ZZZKeyEcho</Product>
     <Description>绝区零输入显示工具：实时显示键鼠与手柄输入，支持 OBS 浏览器源透明叠加。</Description>
     <AssemblyTitle>ZZZKeyEcho</AssemblyTitle>

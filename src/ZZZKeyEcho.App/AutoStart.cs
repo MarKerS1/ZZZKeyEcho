@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Win32;
 
 namespace ZZZKeyEcho.App;
@@ -6,29 +7,69 @@ public static class AutoStart
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "ZZZKeyEcho";
+    private const string TaskName = "ZZZKeyEcho";
 
     public static bool IsEnabled()
     {
-        using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: false);
-        return key?.GetValue(ValueName) is string value && value.Length > 0;
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo("schtasks.exe", $"/Query /TN \"{TaskName}\"")
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            });
+
+            process?.WaitForExit(5000);
+            return process?.ExitCode == 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public static void Set(bool enabled)
     {
-        using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true);
+        RemoveLegacyRunEntry();
 
-        if (enabled)
+        if (!enabled)
         {
-            var path = Environment.ProcessPath;
+            Run($"/Delete /TN \"{TaskName}\" /F");
+            return;
+        }
 
-            if (!string.IsNullOrEmpty(path))
-            {
-                key.SetValue(ValueName, $"\"{path}\"");
-            }
-        }
-        else
+        var path = Environment.ProcessPath;
+
+        if (string.IsNullOrEmpty(path))
         {
-            key.DeleteValue(ValueName, throwOnMissingValue: false);
+            return;
         }
+
+        Run($"/Create /TN \"{TaskName}\" /TR \"\\\"{path}\\\"\" /SC ONLOGON /RL HIGHEST /F");
+    }
+
+    private static void RemoveLegacyRunEntry()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
+            key?.DeleteValue(ValueName, throwOnMissingValue: false);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private static void Run(string arguments)
+    {
+        using var process = Process.Start(new ProcessStartInfo("schtasks.exe", arguments)
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+        });
+
+        process?.WaitForExit(8000);
     }
 }

@@ -30,11 +30,13 @@ powershell -File tools/pack.ps1 -Version 0.1.0   # 打包便携版 → publish/*
 
 ## 快速开始
 
-1. 下载 Release 里的 `ZZZKeyEcho-v0.1.0-win-x64.zip`，解压到任意目录
+1. 下载 Release 里的 `ZZZKeyEcho-v0.1.1-win-x64.zip`，解压到任意目录
 2. 双击 `ZZZKeyEcho.exe`，悬浮窗出现在屏幕左上角
 3. 默认热键：`F8` 显示/隐藏 ｜ `F9` 锁定/解锁 ｜ `F10` 打开设置 ｜ `F11` 调试模式
 
 > 若游戏以管理员身份运行，请同样以管理员身份运行本程序，否则系统会拦截输入监听。
+
+> 首次运行会弹出 UAC 提示，请点「是」：程序以管理员权限运行，否则当游戏也以管理员启动时会收不到输入。
 
 ## 在 OBS 里叠加
 
