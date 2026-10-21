@@ -1,0 +1,50 @@
+<Window x:Class="ZZZKeyEcho.App.Views.RecordButtonWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="操作录制"
+        Width="96"
+        Height="122"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize"
+        Cursor="Hand">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="BallHost" Grid.Row="0" Width="96" Height="96">
+            <Ellipse x:Name="Ball"
+                     Fill="#E60F1418"
+                     Stroke="#66FFFFFF"
+                     StrokeThickness="1.5" />
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock x:Name="GlyphText"
+                           Text="●"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="#FFFF7A7A"
+                           HorizontalAlignment="Center" />
+                <TextBlock x:Name="TimeText"
+                           Text="--:--"
+                           FontSize="11"
+                           Foreground="#CCFFFFFF"
+                           HorizontalAlignment="Center"
+                           Margin="0,2,0,0" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock x:Name="StatusUnder"
+                   Grid.Row="1"
+                   Text="未录制"
+                   FontSize="11"
+                   Foreground="#FF9AA4AD"
+                   HorizontalAlignment="Center"
+                   Margin="0,4,0,0" />
+    </Grid>
+</Window>

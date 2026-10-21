@@ -1,0 +1,24 @@
+<Window x:Class="ZZZKeyEcho.App.Views.ToastWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ZZZKeyEcho"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        IsHitTestVisible="False"
+        ResizeMode="NoResize">
+    <Border Background="#E6101418"
+            BorderBrush="#55FFFFFF"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="22,12">
+        <TextBlock x:Name="MessageText"
+                   FontSize="18"
+                   FontWeight="Bold"
+                   Foreground="#FFF2F2F2" />
+    </Border>
+</Window>

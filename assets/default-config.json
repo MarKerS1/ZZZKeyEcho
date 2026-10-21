@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "overlay": {
     "x": 0,
     "y": 0,
@@ -8,6 +8,7 @@
     "bgColor": "#B3000000",
     "cornerRadius": 12,
     "padding": 8,
+    "textScale": 1,
     "opacity": 1,
     "backgroundOpacity": 1,
     "iconOpacity": 1,
@@ -46,7 +47,9 @@
     "toggleOverlay": "F8",
     "toggleLock": "F9",
     "openSettings": "F10",
-    "debugMode": "F11"
+    "debugMode": "F11",
+    "toggleRecording": "F2",
+    "clearRecords": "F5"
   },
   "profiles": {
     "kbm": {
@@ -381,7 +384,13 @@
     }
   },
   "iconOverrides": {},
-  "debug": {
+  "activity": {
+    "floatButtonEnabled": true,
+    "floatX": -1,
+    "floatY": -1,
+    "floatSize": 96,
+    "floatOpacity": 0.9
+  },  "debug": {
     "enabled": false,
     "remember": false,
     "rehearsalScript": "basic",
@@ -393,7 +402,6 @@
   "webOverlay": {
     "enabled": false,
     "hideLocalOverlay": false,
-    "port": 15965,
-    "fontScale": 1
+    "port": 15965
   }
 }

@@ -78,7 +78,7 @@ public sealed class SettingsViewModel : ObservableObject
 
     public int WebOverlayPort { get => _config.WebOverlay.Port; set => Set(_config.WebOverlay.Port, value, v => _config.WebOverlay.Port = v, SettingsChange.None); }
 
-    public double WebOverlayFontScale { get => _config.WebOverlay.FontScale; set => Set(_config.WebOverlay.FontScale, value, v => _config.WebOverlay.FontScale = v, SettingsChange.None); }
+    public double TextScale { get => _config.Overlay.TextScale; set => Set(_config.Overlay.TextScale, value, v => _config.Overlay.TextScale = v, SettingsChange.OverlayStyle); }
 
     public int MaxCount { get => _config.Records.MaxCount; set => Set(_config.Records.MaxCount, value, v => _config.Records.MaxCount = v, SettingsChange.None); }
 
@@ -105,6 +105,8 @@ public sealed class SettingsViewModel : ObservableObject
     public bool NewestAtBottom { get => _config.Records.NewestAtBottom; set => Set(_config.Records.NewestAtBottom, value, v => _config.Records.NewestAtBottom = v, SettingsChange.Rendering); }
 
     public bool DurationOnLeft { get => _config.Records.DurationOnLeft; set => Set(_config.Records.DurationOnLeft, value, v => _config.Records.DurationOnLeft = v, SettingsChange.Rendering); }
+
+    public int DurationSideIndex { get => _config.Records.DurationOnLeft ? 1 : 0; set => DurationOnLeft = value == 1; }
 
     public bool Fade { get => _config.Records.Fade; set => Set(_config.Records.Fade, value, v => _config.Records.Fade = v, SettingsChange.Rendering); }
 
@@ -153,6 +155,12 @@ public sealed class SettingsViewModel : ObservableObject
 
     public bool DebugModeHotkeyEnabled { get => IsHotkeyEnabled(_config.Hotkeys.DebugMode); set => SetHotkeyEnabled(value, v => _config.Hotkeys.DebugMode = v, () => _config.Hotkeys.DebugMode, "F11", nameof(DebugModeHotkey)); }
 
+    public string ToggleRecordingHotkey { get => _config.Hotkeys.ToggleRecording; set => Set(_config.Hotkeys.ToggleRecording, value, v => _config.Hotkeys.ToggleRecording = v, SettingsChange.None); }
+    public bool ToggleRecordingHotkeyEnabled { get => IsHotkeyEnabled(_config.Hotkeys.ToggleRecording); set => SetHotkeyEnabled(value, v => _config.Hotkeys.ToggleRecording = v, () => _config.Hotkeys.ToggleRecording, "F2", nameof(ToggleRecordingHotkey)); }
+
+    public string ClearRecordsHotkey { get => _config.Hotkeys.ClearRecords; set => Set(_config.Hotkeys.ClearRecords, value, v => _config.Hotkeys.ClearRecords = v, SettingsChange.None); }
+    public bool ClearRecordsHotkeyEnabled { get => IsHotkeyEnabled(_config.Hotkeys.ClearRecords); set => SetHotkeyEnabled(value, v => _config.Hotkeys.ClearRecords = v, () => _config.Hotkeys.ClearRecords, "F5", nameof(ClearRecordsHotkey)); }
+
     public bool DebugMode
     {
         get => _getDebugMode();
@@ -170,6 +178,11 @@ public sealed class SettingsViewModel : ObservableObject
 
     public bool DebugRemember { get => _config.Debug.Remember; set => Set(_config.Debug.Remember, value, v => _config.Debug.Remember = v, SettingsChange.None); }
 
+    public bool FloatButtonEnabled { get => _config.Activity.FloatButtonEnabled; set => Set(_config.Activity.FloatButtonEnabled, value, v => _config.Activity.FloatButtonEnabled = v, SettingsChange.Activity); }
+    public double FloatSize { get => _config.Activity.FloatSize; set => Set(_config.Activity.FloatSize, value, v => _config.Activity.FloatSize = v, SettingsChange.Activity); }
+    public double FloatOpacity { get => _config.Activity.FloatOpacity; set => Set(_config.Activity.FloatOpacity, value, v => _config.Activity.FloatOpacity = v, SettingsChange.Activity); }
+    public double FloatX { get => _config.Activity.FloatX; set => Set(_config.Activity.FloatX, value, v => _config.Activity.FloatX = v, SettingsChange.Activity); }
+    public double FloatY { get => _config.Activity.FloatY; set => Set(_config.Activity.FloatY, value, v => _config.Activity.FloatY = v, SettingsChange.Activity); }
     public void Reload()
     {
         KbmProfile.Reload();
@@ -191,6 +204,8 @@ public sealed class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(OverlayY));
         OnPropertyChanged(nameof(OverlayWidth));
         OnPropertyChanged(nameof(OverlayHeight));
+        OnPropertyChanged(nameof(FloatX));
+        OnPropertyChanged(nameof(FloatY));
     }
 
     private static bool IsHotkeyEnabled(string gesture) => !string.IsNullOrWhiteSpace(gesture);

@@ -5,10 +5,9 @@ namespace ZZZKeyEcho.Core.Tests.Config;
 public class AppConfigDefaultsTests
 {
     [Fact]
-    public void Version_defaults_to_2()
+    public void Version_defaults_to_current()
     {
-        Assert.Equal(2, AppConfig.CurrentVersion);
-        Assert.Equal(2, new AppConfig().Version);
+        Assert.Equal(AppConfig.CurrentVersion, new AppConfig().Version);
     }
 
     [Fact]
@@ -71,6 +70,8 @@ public class AppConfigDefaultsTests
         Assert.Equal("F9", hotkeys.ToggleLock);
         Assert.Equal("F10", hotkeys.OpenSettings);
         Assert.Equal("F11", hotkeys.DebugMode);
+        Assert.Equal("F2", hotkeys.ToggleRecording);
+        Assert.Equal("F5", hotkeys.ClearRecords);
     }
 
     [Fact]

@@ -9,7 +9,7 @@ public class JsonStoreTests
     {
         var json = JsonStore.Serialize(new AppConfig());
 
-        Assert.Contains("\"version\": 2", json);
+        Assert.Contains($"\"version\": {AppConfig.CurrentVersion}", json);
         Assert.Contains("\"iconOverrides\"", json);
         Assert.Contains("\"repeatWindowMs\"", json);
         Assert.Contains("\"xinputPollHz\"", json);
@@ -116,7 +116,7 @@ public class JsonStoreTests
         Assert.Equal(7, config.Records.MaxCount);
         Assert.Equal(48, config.Records.IconSize);
         Assert.Equal("F8", config.Hotkeys.ToggleOverlay);
-        Assert.Equal(2, config.Version);
+        Assert.Equal(AppConfig.CurrentVersion, config.Version);
     }
 
     [Fact]

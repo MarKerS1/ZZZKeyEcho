@@ -6,4 +6,6 @@ public sealed class HotkeysConfig
     public string ToggleLock { get; set; } = "F9";
     public string OpenSettings { get; set; } = "F10";
     public string DebugMode { get; set; } = "F11";
+    public string ToggleRecording { get; set; } = "F2";
+    public string ClearRecords { get; set; } = "F5";
 }

@@ -261,7 +261,7 @@ public sealed class WebOverlayServer : IDisposable
                 padding = _config.Overlay.Padding,
                 newestAtBottom = _config.Records.NewestAtBottom,
                 durationOnLeft = _config.Records.DurationOnLeft,
-                fontScale = _config.WebOverlay.FontScale,
+                fontScale = _config.Overlay.TextScale,
             },
             records,
         };

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using ZZZKeyEcho.Core.Config;
 using ZZZKeyEcho.Core.Input;
+using ZZZKeyEcho.Core.Activity;
 
 namespace ZZZKeyEcho.Core.Engine;
 
@@ -35,6 +36,8 @@ public sealed class RecordEngine
     }
 
     public ObservableCollection<InputRecord> Records { get; } = new();
+
+    public event EventHandler<ActivityEvent>? ActionJournal;
 
     public void UpdateMapping(MappingEngine mapping) => _mapping = mapping;
 
@@ -90,6 +93,8 @@ public sealed class RecordEngine
         {
             return;
         }
+
+        ActionJournal?.Invoke(this, new ActivityEvent(ToActionId(direction), inputEvent.Kind == InputEventKind.Down ? ActivityKind.Down : ActivityKind.Up, inputEvent.TimestampMs, inputEvent.Device.ToString(), inputEvent.Code));
 
         _lastMovementChangeMs = inputEvent.TimestampMs;
         _recentChangeMs[direction] = inputEvent.TimestampMs;
@@ -238,6 +243,11 @@ public sealed class RecordEngine
             return;
         }
 
+        foreach (var action in actions)
+        {
+            ActionJournal?.Invoke(this, new ActivityEvent(action, ActivityKind.Down, inputEvent.TimestampMs, inputEvent.Device.ToString(), inputEvent.Code));
+        }
+
         var movement = ResolveComboMovement(inputEvent.TimestampMs);
         var rowKey = InputRecord.BuildRowKey(movement, actions, inputEvent.Code);
 
@@ -259,6 +269,11 @@ public sealed class RecordEngine
             return;
         }
 
+        foreach (var action in record.Actions)
+        {
+            ActionJournal?.Invoke(this, new ActivityEvent(action, ActivityKind.Up, inputEvent.TimestampMs, inputEvent.Device.ToString(), inputEvent.Code));
+        }
+
         record.EndHold(inputEvent.TimestampMs);
 
         if (record.Count <= 1 || record.DurationMs < _settings.RepeatWindowMs)
@@ -274,6 +289,15 @@ public sealed class RecordEngine
     }
 
     private bool IsAutoRepeat(string code) => _activeByKey.ContainsKey(code);
+
+    private static string ToActionId(Direction direction) => direction switch
+    {
+        Direction.Up => "dirUp",
+        Direction.Down => "dirDown",
+        Direction.Left => "dirLeft",
+        Direction.Right => "dirRight",
+        _ => direction.ToString(),
+    };
 
     private bool TryMerge(InputEvent inputEvent, string rowKey)
     {

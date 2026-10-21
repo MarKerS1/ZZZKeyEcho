@@ -63,8 +63,12 @@ public static class JsonStore
 
     public static string Serialize(AppConfig config) => JsonSerializer.Serialize(config, Options);
 
-    public static AppConfig Deserialize(string json) =>
-        JsonSerializer.Deserialize<AppConfig>(json, Options) ?? new AppConfig();
+    public static AppConfig Deserialize(string json)
+    {
+        var config = JsonSerializer.Deserialize<AppConfig>(json, Options) ?? new AppConfig();
+        config.EnsureDefaults();
+        return config;
+    }
 
     private static bool IsWritable(string directory)
     {

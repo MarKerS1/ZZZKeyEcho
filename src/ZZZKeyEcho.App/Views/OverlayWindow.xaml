@@ -50,14 +50,14 @@
                                 <TextBlock Text="{Binding Count, Converter={StaticResource CountBadge}}"
                                            Margin="0,0,6,0"
                                            Effect="{StaticResource TextOutline}"
-                                           FontSize="16"
+                                           FontSize="{Binding CountFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                            FontWeight="Bold"
                                            Foreground="#FFFFFF"
                                            VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding DisplayDurationMs, Converter={StaticResource HoldText}}"
                                            Effect="{StaticResource TextOutline}"
                                            Margin="0"
-                                           FontSize="14"
+                                           FontSize="{Binding DurationFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                            Foreground="#C8C8C8"
                                            VerticalAlignment="Center" />
                             </StackPanel>
@@ -91,7 +91,7 @@
                                 <TextBlock Text="+"
                                            Effect="{StaticResource TextOutline}"
                                            Margin="5,0"
-                                           FontSize="18"
+                                           FontSize="{Binding PlusFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                            FontWeight="Bold"
                                            Foreground="#F2F2F2"
                                            VerticalAlignment="Center">

@@ -1,12 +1,15 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using H.NotifyIcon;
 using ZZZKeyEcho.App.Rendering;
 using ZZZKeyEcho.App.Views;
+using ZZZKeyEcho.App.Updates;
+using ZZZKeyEcho.Core.Activity;
 using ZZZKeyEcho.Core.Config;
 using ZZZKeyEcho.Core.Input;
+using ZZZKeyEcho.Core.Update;
 using ZZZKeyEcho.Core.Win32;
 
 namespace ZZZKeyEcho.App;
@@ -17,6 +20,8 @@ public partial class App : Application
     private const string HotkeyToggleLock = "toggleLock";
     private const string HotkeyOpenSettings = "openSettings";
     private const string HotkeyDebugMode = "debugMode";
+    private const string HotkeyToggleRecording = "toggleRecording";
+    private const string HotkeyClearRecords = "clearRecords";
 
     private AppConfig _config = null!;
     private SystemClock _clock = null!;
@@ -29,6 +34,10 @@ public partial class App : Application
     private SettingsWindow? _settings;
     private DebugPanel? _debugPanel;
     private WebOverlayServer _webOverlay = null!;
+    private ActivityRecorder _activity = null!;
+    private RecordButtonWindow? _recordButton;
+    private ToastWindow? _toast;
+    private bool _lastRecordingState;
     private DispatcherTimer? _renderingTimer;
     private bool _debugMode;
 
@@ -37,6 +46,25 @@ public partial class App : Application
         base.OnStartup(e);
 
         TooltipDefaults.Enable();
+
+        var otherInstances = ProcessGuard.FindOtherInstances();
+
+        if (otherInstances.Count > 0)
+        {
+            var dialog = new AlreadyRunningWindow(otherInstances.Count) { Topmost = true };
+            dialog.ShowDialog();
+
+            if (dialog.Result != AlreadyRunningResult.Restart)
+            {
+                Shutdown();
+                return;
+            }
+
+            if (!ProcessGuard.TerminateAll(TimeSpan.FromSeconds(2)))
+            {
+                MessageBox.Show("部分实例无法结束，请用任务管理器关闭后再试。", "ZZZKeyEcho");
+            }
+        }
 
         _config = JsonStore.Load();
 
@@ -70,6 +98,10 @@ public partial class App : Application
         _pipeline = new InputPipeline(_config, _clock);
         _pipeline.Start();
 
+        _activity = new ActivityRecorder(_pipeline.Engine, _clock, Path.Combine(AppContext.BaseDirectory, "ActivityLogs"));
+        _activity.Changed += OnActivityChanged;
+        _lastRecordingState = _activity.IsRecording;
+
         _webOverlay = new WebOverlayServer(_config, _pipeline.Engine, _icons, Path.Combine(AppContext.BaseDirectory, "assets"));
         _webOverlay.Sync();
 
@@ -96,8 +128,13 @@ public partial class App : Application
         _hotkeys.Register(HotkeyToggleLock, _config.Hotkeys.ToggleLock);
         _hotkeys.Register(HotkeyOpenSettings, _config.Hotkeys.OpenSettings);
         _hotkeys.Register(HotkeyDebugMode, _config.Hotkeys.DebugMode);
+        _hotkeys.Register(HotkeyToggleRecording, _config.Hotkeys.ToggleRecording);
+        _hotkeys.Register(HotkeyClearRecords, _config.Hotkeys.ClearRecords);
 
         _trayIcon = CreateTrayIcon();
+        _toast = new ToastWindow();
+        CheckForUpdatesOnStartup();
+        ApplyActivitySettings();
 
         if (_config.Debug.Enabled)
         {
@@ -112,6 +149,9 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _activity.Changed -= OnActivityChanged;
+        _toast?.Close();
+        _activity?.Stop();
         JsonStore.Save(_config);
         _webOverlay.Dispose();
         _pipeline.Dispose();
@@ -132,6 +172,13 @@ public partial class App : Application
         lockItem.Click += (_, _) => ToggleLock();
         menu.Items.Add(lockItem);
 
+        var recordItem = new MenuItem { Header = "开始 / 结束操作录制" };
+        recordItem.Click += (_, _) => _activity.Toggle();
+        menu.Items.Add(recordItem);
+
+        var clearRecordsItem = new MenuItem { Header = "清除悬浮窗记录" };
+        clearRecordsItem.Click += (_, _) => ClearOverlayRecords();
+        menu.Items.Add(clearRecordsItem);
         var debugItem = new MenuItem { Header = "调试模式", IsCheckable = true };
         debugItem.Click += (_, _) =>
         {
@@ -180,10 +227,16 @@ public partial class App : Application
                 ToggleLock();
                 break;
             case HotkeyOpenSettings:
-                ShowSettings();
+                ToggleSettings();
                 break;
             case HotkeyDebugMode:
                 ToggleDebugMode();
+                break;
+            case HotkeyToggleRecording:
+                _activity.Toggle();
+                break;
+            case HotkeyClearRecords:
+                ClearOverlayRecords();
                 break;
         }
     }
@@ -286,6 +339,17 @@ public partial class App : Application
         onboarding.Activate();
     }
 
+    private void ToggleSettings()
+    {
+        if (_settings is { IsVisible: true })
+        {
+            _settings.Hide();
+            return;
+        }
+
+        ShowSettings();
+    }
+
     private void ShowSettings()
     {
         if (_settings is null)
@@ -296,7 +360,8 @@ public partial class App : Application
                 () => _overlay.FlashBorder(),
                 _icons,
                 ApplyHotkeys,
-                SetDebugMode);
+                SetDebugMode,
+                _activity);
             _settings.Closed += (_, _) => _settings = null;
         }
 
@@ -325,7 +390,7 @@ public partial class App : Application
         if (!string.IsNullOrEmpty(_config.Hotkeys.OpenSettings)
             && !_hotkeys.Register(HotkeyOpenSettings, _config.Hotkeys.OpenSettings))
         {
-            failures.Add($"打开设置（{_config.Hotkeys.OpenSettings}）");
+            failures.Add($"打开 / 关闭设置（{_config.Hotkeys.OpenSettings}）");
         }
 
         if (!string.IsNullOrEmpty(_config.Hotkeys.DebugMode)
@@ -334,9 +399,70 @@ public partial class App : Application
             failures.Add($"调试模式（{_config.Hotkeys.DebugMode}）");
         }
 
+        if (!string.IsNullOrEmpty(_config.Hotkeys.ToggleRecording)
+            && !_hotkeys.Register(HotkeyToggleRecording, _config.Hotkeys.ToggleRecording))
+        {
+            failures.Add($"开始/结束录制（{_config.Hotkeys.ToggleRecording}）");
+        }
+
+        if (!string.IsNullOrEmpty(_config.Hotkeys.ClearRecords)
+            && !_hotkeys.Register(HotkeyClearRecords, _config.Hotkeys.ClearRecords))
+        {
+            failures.Add($"清除悬浮窗记录（{_config.Hotkeys.ClearRecords}）");
+        }
+
         return failures.Count == 0
             ? "热键已应用，全部注册成功。"
             : "以下热键被其他程序占用，注册失败：" + string.Join("、", failures);
+    }
+
+    private void OnActivityChanged(object? sender, EventArgs e)
+    {
+        var recording = _activity.IsRecording;
+
+        if (recording == _lastRecordingState)
+        {
+            return;
+        }
+
+        _lastRecordingState = recording;
+        _toast?.ShowMessage(recording ? "● 开始录制" : "■ 已停止录制", 3);
+    }
+
+    private void ClearOverlayRecords()
+    {
+        _pipeline.Engine.Clear();
+    }
+
+    private async void CheckForUpdatesOnStartup()
+    {
+        var result = await Task.Run(() => UpdateChecker.CheckAsync(TimeSpan.FromSeconds(10)));
+
+        if (result.Update is null)
+        {
+            return;
+        }
+
+        UpdatePrompt.Show(null, result.Update);
+    }
+    private void ApplyActivitySettings()
+    {
+        if (!_config.Activity.FloatButtonEnabled)
+        {
+            _recordButton?.Hide();
+            return;
+        }
+
+        if (_recordButton is null)
+        {
+            _recordButton = new RecordButtonWindow(_activity, _config);
+            _recordButton.Closed += (_, _) => _recordButton = null;
+            _recordButton.Show();
+            return;
+        }
+
+        _recordButton.ApplyConfiguration();
+        _recordButton.Show();
     }
 
     private void OnStateChanged(object? sender, SettingsChange change)
@@ -356,6 +482,11 @@ public partial class App : Application
         if (change.HasFlag(SettingsChange.Rendering))
         {
             ScheduleRenderingRefresh();
+        }
+
+        if (change.HasFlag(SettingsChange.Activity))
+        {
+            ApplyActivitySettings();
         }
 
         UpdateOverlayVisibility();

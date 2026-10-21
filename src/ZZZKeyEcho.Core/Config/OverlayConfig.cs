@@ -9,6 +9,7 @@ public sealed class OverlayConfig
     public string BgColor { get; set; } = "#B3000000";
     public double CornerRadius { get; set; } = 12;
     public double Padding { get; set; } = 8;
+    public double TextScale { get; set; } = 1.0;
     public double Opacity { get; set; } = 1.0;
     public double BackgroundOpacity { get; set; } = 1.0;
     public double IconOpacity { get; set; } = 1.0;

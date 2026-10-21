@@ -25,6 +25,12 @@ public partial class OverlayWindow : Window
     private double _dragLeft;
     private double _dragTop;
     private bool _dragging;
+    public static readonly DependencyProperty CountFontSizeProperty = DependencyProperty.Register(nameof(CountFontSize), typeof(double), typeof(OverlayWindow), new PropertyMetadata(16.0));
+    public static readonly DependencyProperty DurationFontSizeProperty = DependencyProperty.Register(nameof(DurationFontSize), typeof(double), typeof(OverlayWindow), new PropertyMetadata(14.0));
+    public static readonly DependencyProperty PlusFontSizeProperty = DependencyProperty.Register(nameof(PlusFontSize), typeof(double), typeof(OverlayWindow), new PropertyMetadata(18.0));
+    public double CountFontSize { get => (double)GetValue(CountFontSizeProperty); set => SetValue(CountFontSizeProperty, value); }
+    public double DurationFontSize { get => (double)GetValue(DurationFontSizeProperty); set => SetValue(DurationFontSizeProperty, value); }
+    public double PlusFontSize { get => (double)GetValue(PlusFontSizeProperty); set => SetValue(PlusFontSizeProperty, value); }
 
     public OverlayWindow(AppConfig config, RecordEngine engine, IClock clock, IconProvider icons)
     {
@@ -251,6 +257,10 @@ public partial class OverlayWindow : Window
         Width = overlay.Width;
         Height = overlay.Height;
         Opacity = overlay.Opacity;
+        var textScale = Math.Clamp(overlay.TextScale, 0.5, 2.0);
+        CountFontSize = 16 * textScale;
+        DurationFontSize = 14 * textScale;
+        PlusFontSize = 18 * textScale;
 
         Left = ClampToVirtualScreen(overlay.X, SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - Width);
         Top = ClampToVirtualScreen(overlay.Y, SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - Height);

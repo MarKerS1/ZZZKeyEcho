@@ -26,9 +26,13 @@
         <TextBlock TextWrapping="Wrap" Opacity="0.85"
                    Text="· 解锁后可以直接用鼠标拖动、拉伸悬浮窗；锁定后鼠标穿透，不影响游戏。&#10;· 游戏的按键映射、记录行为、外观都能在设置里实时调整。&#10;· 想换图标：设置 → 图标管理 → 导入 PNG；也可以直接把图片放到 assets/icons/custom/&lt;动作ID&gt;.png。&#10;· 游戏运行时悬浮窗会自动显示，退出游戏自动隐藏（可在设置里关闭）。" />
 
+        <TextBlock Text="操作录制" Margin="0,16,0,4" FontWeight="SemiBold" />
+        <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                   Text="· 按 F2 开始 / 结束录制（默认热键），开始与结束时屏幕上方会提示 3 秒。&#10;· 录制按“动作”记录，不记录物理按键：普通攻击、特殊技、闪避、切人、连携、方向移动等都会转换成动作 ID。&#10;· CSV 保存在 exe 同级的 ActivityLogs 文件夹，表头为 pressed_at,action_id,released_at，时间从开始录制起算、精确到毫秒。&#10;· 设置 → 操作录制 可以打开展示目录、导出为单文件 HTML（时间轴 + 表格双页面，可筛选 / 播放 / 调速），也可以直接删除不需要的录制文件。&#10;· 清除悬浮窗记录（F5）只清空屏幕显示，不会删除已录制的 CSV。&#10;· 想更顺手地开始 / 停止：可在设置里打开悬浮录制按钮，自由调整尺寸、透明度与位置。" />
+
         <TextBlock Text="下一步" Margin="0,16,0,4" FontWeight="SemiBold" />
         <TextBlock TextWrapping="Wrap" Opacity="0.85"
-                   Text="建议先按上面的快捷键打开设置，确认按键映射和你的游戏按键一致；再按调试模式热键，在不进游戏的情况下试一遍所有动作。" />
+                   Text="建议先按上面的快捷键打开 / 关闭设置，确认按键映射和你的游戏按键一致；再按调试模式热键，在不进游戏的情况下试一遍所有动作。" />
 
         <Button Content="开始使用"
                 Click="OnClose"

@@ -116,6 +116,47 @@
             </StackPanel>
         </TabItem>
 
+        <TabItem Header="操作录制" ToolTip="把操作动作录成 CSV，导出成可回看的时间轴网页。">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12">
+                    <TextBlock Text="录制" Style="{StaticResource Section}" />
+                    <TextBlock x:Name="ActivityStatusText" TextWrapping="Wrap" Opacity="0.85" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button x:Name="ActivityToggleButton" Content="开始录制" Padding="14,4" Click="OnToggleRecording" />
+                        <Button Content="打开操作录制文件目录" Padding="12,4" Margin="8,0,0,0" Click="OnOpenLogsFolder" ToolTip="打开 exe 同级的 ActivityLogs 文件夹。" />
+                        <TextBlock Text="热键 F2（在「系统」页修改）" Style="{StaticResource Label}" Margin="12,5,0,5" Opacity="0.7" />
+                    </StackPanel>
+                    <TextBlock Text="悬浮录制按钮" Style="{StaticResource Section}" />
+                    <CheckBox Content="显示悬浮的「开始/结束录制」按钮（可直接拖动）" Style="{StaticResource Option}" IsChecked="{Binding FloatButtonEnabled}" />
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="尺寸" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="0" Grid.Column="1" Minimum="48" Maximum="200" Step="1" Value="{Binding FloatSize}" Suffix="px" ToolTip="悬浮按钮的直径。" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="不透明度" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="1" Grid.Column="1" Minimum="0.2" Maximum="1" Decimals="2" Value="{Binding FloatOpacity}" ToolTip="悬浮按钮的不透明度。" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="X 坐标" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="2" Grid.Column="1" Minimum="-3840" Maximum="3840" Value="{Binding FloatX}" ToolTip="拖动按钮后会自动保存；-1 表示默认右下角。" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Y 坐标" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="3" Grid.Column="1" Minimum="-2160" Maximum="2160" Value="{Binding FloatY}" ToolTip="拖动按钮后会自动保存；-1 表示默认右下角。" />
+                    </Grid>
+                    <TextBlock Text="录制文件" Style="{StaticResource Section}" />
+                    <ListBox x:Name="RecordingFiles" Height="130" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button Content="刷新" Padding="10,3" Click="OnRefreshRecordings" />
+                        <Button Content="导出为 HTML…" Padding="10,3" Margin="6,0,0,0" Click="OnExportRecordingHtml" />
+                        <Button Content="删除选中" Padding="10,3" Margin="6,0,0,0" Click="OnDeleteRecording" ToolTip="删除列表里选中的录制文件（不可恢复）。" />
+                    </StackPanel>
+                    <TextBlock Text="说明" Style="{StaticResource Section}" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.75" Text="· CSV 表头：pressed_at,action_id,released_at；时间从开始录制计起，单位秒、三位小数。&#10;· 只记录已映射的动作（攻击/闪避/技能/切人/方向），不记录具体按键；转圈不记录。&#10;· 记录受「仅在游戏前台时记录」和总开关影响。" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
         <TabItem Header="悬浮窗外观" ToolTip="尺寸、位置、颜色、透明度、锁定与自动隐藏。解锁后可以直接用鼠标拖动和拉伸悬浮窗。">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="12">
@@ -126,6 +167,7 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition />
                             <RowDefinition />
                             <RowDefinition />
                             <RowDefinition />
@@ -147,6 +189,9 @@
 
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="图标大小" Style="{StaticResource Label}" />
                         <controls:NumericSlider Grid.Row="4" Grid.Column="1" Minimum="16" Maximum="128" Step="1" Value="{Binding IconSize}" Suffix="px" ToolTip="单个图标的显示尺寸（组合图标也按这个大小）。建议 36–56 px。" />
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="文字字号" Style="{StaticResource Label}" />
+                        <controls:NumericSlider Grid.Row="5" Grid.Column="1" Minimum="0.5" Maximum="2" Step="0.05" Decimals="2" Value="{Binding TextScale}" ToolTip="×N、计时与 + 的字号倍率；网页端同步。" />
                     </Grid>
 
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -155,6 +200,7 @@
                         <Button Content="移到右上角" ToolTip="把悬浮窗贴到屏幕右上角（会避开屏幕右边缘）。" Padding="12,4" Margin="8,0,0,0" Tag="TR" Click="OnMoveToCorner" />
                         <Button Content="移到右下角" ToolTip="把悬浮窗贴到屏幕右下角。" Padding="12,4" Margin="8,0,0,0" Tag="BR" Click="OnMoveToCorner" />
                         <Button Content="测试可见性（闪烁 2 秒）" ToolTip="让悬浮窗边框闪两下，用来找到它当前的位置——锁定状态下也能看见。" Padding="12,4" Margin="16,0,0,0" Click="OnTestVisibility" />
+                        <Button Content="清除悬浮窗记录" ToolTip="清空当前显示的所有记录（热键 F5）。录制文件不受影响，网页端会同步清空。" Padding="12,4" Margin="16,0,0,0" Click="OnClearOverlayRecords" />
                     </StackPanel>
 
                     <TextBlock Text="外观" Style="{StaticResource Section}" />
@@ -265,7 +311,7 @@
                         <TextBlock Text="计时器位置" Style="{StaticResource Label}" Margin="0,5,8,5" />
                         <ComboBox Width="110"
                                   ToolTip="计时与“×N”放在哪一侧：右侧＝图标在左；左侧＝时间、次数贴左边，图标贴右边。"
-                                  SelectedValue="{Binding DurationOnLeft}"
+                                  SelectedIndex="{Binding DurationSideIndex}"
                                   SelectedValuePath="Tag">
                             <ComboBoxItem Content="右侧" Tag="False" />
                             <ComboBoxItem Content="左侧" Tag="True" />
@@ -386,6 +432,8 @@
                             <RowDefinition />
                             <RowDefinition />
                             <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
                         </Grid.RowDefinitions>
 
                         <CheckBox Grid.Row="0" Grid.Column="0" ToolTip="取消勾选＝停用该热键（不会影响别的热键）。" Style="{StaticResource Option}" IsChecked="{Binding ToggleOverlayHotkeyEnabled}" />
@@ -399,7 +447,7 @@
                         <Button Grid.Row="1" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleLockHotkey" Click="OnChangeHotkeyClick" />
 
                         <CheckBox Grid.Row="2" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding OpenSettingsHotkeyEnabled}" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="打开设置" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="打开 / 关闭设置" Style="{StaticResource Label}" />
                         <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding OpenSettingsHotkey}" Width="110" VerticalAlignment="Center" />
                         <Button Grid.Row="2" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="OpenSettingsHotkey" Click="OnChangeHotkeyClick" />
 
@@ -407,8 +455,23 @@
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="调试模式" Style="{StaticResource Label}" />
                         <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding DebugModeHotkey}" Width="110" VerticalAlignment="Center" />
                         <Button Grid.Row="3" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="DebugModeHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="4" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ToggleRecordingHotkeyEnabled}" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="开始 / 结束操作录制" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding ToggleRecordingHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="4" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleRecordingHotkey" Click="OnChangeHotkeyClick" />
+
+                        <CheckBox Grid.Row="5" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ClearRecordsHotkeyEnabled}" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="清除悬浮窗记录" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="5" Grid.Column="2" Text="{Binding ClearRecordsHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="5" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ClearRecordsHotkey" Click="OnChangeHotkeyClick" />
                     </Grid>
                     <TextBlock x:Name="HotkeysStatusText" Margin="0,8,0,0" Opacity="0.85" TextWrapping="Wrap" />
+
+                    <TextBlock Text="更新检测" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="CheckUpdateButton" Content="检测更新" Padding="12,4" Click="OnCheckUpdateClick" ToolTip="向 GitHub 查询最新发布版本；最多等待 10 秒，失败不打扰。" />
+                        <TextBlock x:Name="UpdateStatusText" Style="{StaticResource Label}" Margin="10,5,0,5" Opacity="0.75" />
+                    </StackPanel>
 
                     <TextBlock Text="启动与窗口" Style="{StaticResource Section}" />
                     <StackPanel Orientation="Horizontal">
@@ -473,10 +536,6 @@
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                         <TextBlock Text="端口" Style="{StaticResource Label}" />
                         <controls:NumericSlider Width="260" Minimum="1024" Maximum="65535" Step="1" Value="{Binding WebOverlayPort}" ToolTip="本地服务端口，改完立即重启服务；若被占用换一个（例如 15966）。" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                        <TextBlock Text="网页字号" Style="{StaticResource Label}" />
-                        <controls:NumericSlider Width="260" Minimum="0.5" Maximum="2" Decimals="2" Value="{Binding WebOverlayFontScale}" ToolTip="只影响网页端 ×N 与计时文字的大小（图标大小跟随上面的「图标大小」设置）。" />
                     </StackPanel>
 
                     <TextBlock Text="地址" Style="{StaticResource Section}" />

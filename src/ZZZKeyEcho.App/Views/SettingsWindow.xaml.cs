@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 using ZZZKeyEcho.App.Rendering;
 using ZZZKeyEcho.App.ViewModels;
+using ZZZKeyEcho.Core.Activity;
 using ZZZKeyEcho.Core.Config;
 using ZZZKeyEcho.Core.Input;
 
@@ -30,7 +31,8 @@ public partial class SettingsWindow : Window
         Action flashOverlay,
         IconProvider icons,
         Func<string> applyHotkeys,
-        Action<bool> setDebugMode)
+        Action<bool> setDebugMode,
+        ActivityRecorder recorder)
     {
         _state = state;
         _status = statusProvider;
@@ -50,6 +52,7 @@ public partial class SettingsWindow : Window
         RecordingCheckBox.DataContext = _state;
         Topmost = _viewModel.SettingsTopMost;
         UpdateStatus();
+        InitializeActivity(recorder);
 
         state.Pipeline.RawEvent += OnRawEvent;
         Closed += (_, _) => state.Pipeline.RawEvent -= OnRawEvent;
@@ -260,6 +263,12 @@ public partial class SettingsWindow : Window
                 break;
             case "DebugModeHotkey":
                 _viewModel.DebugModeHotkey = gesture;
+                break;
+            case "ToggleRecordingHotkey":
+                _viewModel.ToggleRecordingHotkey = gesture;
+                break;
+            case "ClearRecordsHotkey":
+                _viewModel.ClearRecordsHotkey = gesture;
                 break;
         }
 
