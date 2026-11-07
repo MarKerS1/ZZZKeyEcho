@@ -1,0 +1,67 @@
+<Window x:Class="ZZZKeyEcho.App.Stamps.StampEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="印章编辑模式"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="#80000000"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        ShowActivated="True"
+        PreviewKeyDown="OnPreviewKeyDown"
+        Closing="OnClosing">
+    <Grid>
+        <Canvas x:Name="Surface"
+                Background="Transparent"
+                PreviewMouseLeftButtonDown="OnMouseDown"
+                PreviewMouseMove="OnMouseMove"
+                PreviewMouseLeftButtonUp="OnMouseUp"
+                PreviewMouseRightButtonDown="OnMouseRightDown" />
+
+        <Border x:Name="HintPanel"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Margin="0,24,0,0"
+                Padding="20,10"
+                CornerRadius="10"
+                Background="#CC101418"
+                BorderBrush="#55FFFFFF"
+                BorderThickness="1"
+                IsHitTestVisible="False">
+            <TextBlock x:Name="HintText"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="#DDF2F2F2"
+                       Text="拖动源 / 映框调整位置；点击「映」可编辑外观。"
+                       TextAlignment="Center" />
+        </Border>
+
+        <StackPanel HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Orientation="Horizontal"
+                    Margin="0,76,18,0">
+            <Button Content="新建源输入" Padding="14,6" Click="OnNewClick" />
+            <Button Content="删除源输入" Padding="14,6" Margin="8,0,0,0" Click="OnDeleteClick" />
+            <Button Content="保存当前布局" Padding="14,6" Margin="8,0,0,0" Click="OnSaveClick" />
+            <Button Content="退出" Padding="14,6" Margin="8,0,0,0" Click="OnExitClick" />
+        </StackPanel>
+
+        <Border x:Name="InspectorHost"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Width="310"
+                MaxHeight="520"
+                Margin="0,0,18,18"
+                Padding="12"
+                CornerRadius="10"
+                Background="#EE101418"
+                BorderBrush="#55FFFFFF"
+                BorderThickness="1"
+                Visibility="Collapsed">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="InspectorPanel" />
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>

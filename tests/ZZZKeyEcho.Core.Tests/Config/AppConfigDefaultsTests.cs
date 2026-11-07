@@ -72,6 +72,7 @@ public class AppConfigDefaultsTests
         Assert.Equal("F11", hotkeys.DebugMode);
         Assert.Equal("F2", hotkeys.ToggleRecording);
         Assert.Equal("F5", hotkeys.ClearRecords);
+        Assert.Equal("F7", hotkeys.HideStamps);
     }
 
     [Fact]

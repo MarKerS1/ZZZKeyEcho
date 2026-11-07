@@ -132,6 +132,8 @@ public class JsonStoreTests
         Assert.Contains("\"debug\"", json);
         Assert.Contains("\"gameProcess\"", json);
         Assert.Contains("\"bindings\"", json);
+        Assert.Contains("\"stamps\"", json);
+        Assert.Contains("\"hideStamps\": \"F7\"", json);
     }
 
     private static string CreateTempDir()

@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using ZZZKeyEcho.App.Rendering;
+using ZZZKeyEcho.App.Stamps;
 using ZZZKeyEcho.Core.Config;
 using ZZZKeyEcho.Core.Engine;
 
@@ -15,12 +16,15 @@ public sealed class WebOverlayServer : IDisposable
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
     private readonly AppConfig _config;
     private readonly RecordEngine _engine;
     private readonly IconProvider _icons;
     private readonly string _assetsDirectory;
+    private readonly StampManager? _stamps;
+    private readonly Func<bool>? _isGameRunning;
     private readonly Dictionary<string, string> _iconIndex = new(StringComparer.Ordinal);
     private readonly Dictionary<string, byte[]> _composites = new(StringComparer.Ordinal);
     private readonly DispatcherTimer _timer;
@@ -32,12 +36,16 @@ public sealed class WebOverlayServer : IDisposable
         AppConfig config,
         RecordEngine engine,
         IconProvider icons,
-        string assetsDirectory)
+        string assetsDirectory,
+        StampManager? stamps = null,
+        Func<bool>? isGameRunning = null)
     {
         _config = config;
         _engine = engine;
         _icons = icons;
         _assetsDirectory = assetsDirectory;
+        _stamps = stamps;
+        _isGameRunning = isGameRunning;
         BuildIconIndex();
         BuildCompositeIcons();
         _timer = new DispatcherTimer(DispatcherPriority.Background, Dispatcher.CurrentDispatcher)
@@ -116,11 +124,13 @@ public sealed class WebOverlayServer : IDisposable
     {
         BuildCompositeIcons();
 
-        if (_config.WebOverlay.Enabled && !IsRunning)
+        var wantWeb = _config.WebOverlay.Enabled;
+
+        if (wantWeb && !IsRunning)
         {
             Start();
         }
-        else if (!_config.WebOverlay.Enabled && IsRunning)
+        else if (!wantWeb && IsRunning)
         {
             Stop();
         }
@@ -170,6 +180,37 @@ public sealed class WebOverlayServer : IDisposable
             return;
         }
 
+        var path = context.Request.Url?.AbsolutePath ?? "/";
+
+        if (path.StartsWith("/stamp/", StringComparison.Ordinal)
+            && path.EndsWith("/stream", StringComparison.Ordinal))
+        {
+            if (listener.IsListening)
+            {
+                listener.BeginGetContext(OnContext, listener);
+            }
+
+            try
+            {
+                StreamStamp(context, path);
+            }
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                try
+                {
+                    context.Response.Close();
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            return;
+        }
+
         try
         {
             Handle(context);
@@ -202,6 +243,26 @@ public sealed class WebOverlayServer : IDisposable
         if (path == "/state")
         {
             Write(context, "application/json; charset=utf-8", Encoding.UTF8.GetBytes(_state));
+            return;
+        }
+
+        if (path == "/stamps")
+        {
+            var stampsPage = Path.Combine(_assetsDirectory, "web", "stamps.html");
+
+            if (File.Exists(stampsPage))
+            {
+                Write(context, "text/html; charset=utf-8", File.ReadAllBytes(stampsPage));
+                return;
+            }
+
+            context.Response.StatusCode = 404;
+            return;
+        }
+
+        if (path == "/stamps/state")
+        {
+            Write(context, "application/json; charset=utf-8", Encoding.UTF8.GetBytes(BuildStampState()));
             return;
         }
 
@@ -239,6 +300,62 @@ public sealed class WebOverlayServer : IDisposable
         context.Response.StatusCode = 404;
     }
 
+    private string BuildStampState()
+    {
+        var canvas = _stamps?.WebCanvas ?? new System.Windows.Int32Rect();
+        var gameRunning = _isGameRunning?.Invoke() ?? true;
+        var state = new
+        {
+            visible = !_config.Stamps.FollowGame || gameRunning,
+            canvas = new { width = canvas.Width, height = canvas.Height },
+            stamps = _stamps?.GetWebSnapshots() ?? Array.Empty<StampWebSnapshot>(),
+            fps = _config.Stamps.CaptureFps,
+        };
+
+        return JsonSerializer.Serialize(state, JsonOptions);
+    }
+
+    private void StreamStamp(HttpListenerContext context, string path)
+    {
+        if (_stamps is null)
+        {
+            context.Response.StatusCode = 404;
+            return;
+        }
+
+        var middle = path["/stamp/".Length..];
+        var slash = middle.IndexOf('/');
+
+        if (slash <= 0 || !int.TryParse(middle[..slash], out var index))
+        {
+            context.Response.StatusCode = 404;
+            return;
+        }
+
+        var response = context.Response;
+        response.ContentType = "multipart/x-mixed-replace; boundary=frame";
+        response.SendChunked = true;
+        var output = response.OutputStream;
+        var header = Encoding.ASCII;
+
+        while (_listener?.IsListening == true)
+        {
+            if (!_stamps.TryGetJpeg(index, out var jpeg))
+            {
+                Thread.Sleep(15);
+                continue;
+            }
+
+            var head = header.GetBytes(
+                $"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {jpeg.Length}\r\n\r\n");
+            output.Write(head, 0, head.Length);
+            output.Write(jpeg, 0, jpeg.Length);
+            output.Write(header.GetBytes("\r\n"), 0, 2);
+            output.Flush();
+            Thread.Sleep(Math.Max(10, 1000 / Math.Max(1, _config.Stamps.CaptureFps)));
+        }
+    }
+
     private static void Write(HttpListenerContext context, string contentType, byte[] body)
     {
         context.Response.ContentType = contentType;
@@ -249,8 +366,10 @@ public sealed class WebOverlayServer : IDisposable
     private string BuildState()
     {
         var records = _engine.Records.Select(ToSnapshot).ToList();
+        var gameRunning = _isGameRunning?.Invoke() ?? true;
         var state = new
         {
+            visible = !_config.Overlay.FollowGame || gameRunning,
             settings = new
             {
                 background = _config.Overlay.BgColor,

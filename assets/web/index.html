@@ -55,6 +55,12 @@ async function tick() {
 }
 
 function render(state) {
+  if (state.visible === false) {
+    root.style.display = 'none';
+    return;
+  }
+
+  root.style.display = '';
   const s = state.settings;
   root.style.setProperty('--bg', withOpacity(s.background, s.backgroundOpacity));
   root.style.setProperty('--iconOpacity', s.iconOpacity);

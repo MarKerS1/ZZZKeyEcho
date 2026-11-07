@@ -95,7 +95,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TabControl Grid.Row="0" Margin="10">
+        <TabControl x:Name="MainTabs" Grid.Row="0" Margin="10">
         <TabItem Header="状态" ToolTip="总览：记录开关、运行时状态、性能自测。判断“为什么没记录”先看这一页。">
             <StackPanel Margin="12">
                 <TextBlock Text="记录总开关" Style="{StaticResource Section}" />
@@ -157,10 +157,10 @@
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
-        <TabItem Header="悬浮窗外观" ToolTip="尺寸、位置、颜色、透明度、锁定与自动隐藏。解锁后可以直接用鼠标拖动和拉伸悬浮窗。">
+        <TabItem Header="按键悬浮窗" ToolTip="按键悬浮窗的尺寸、位置、颜色、透明度、锁定与自动隐藏。解锁后可以直接用鼠标拖动和拉伸。">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="12">
-                    <TextBlock Text="尺寸与位置（解锁后可直接用鼠标拖动/拉伸悬浮窗）" Style="{StaticResource Section}" />
+                    <TextBlock Text="按键悬浮窗：尺寸与位置（解锁后可直接拖动/拉伸）" Style="{StaticResource Section}" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90" />
@@ -203,7 +203,7 @@
                         <Button Content="清除悬浮窗记录" ToolTip="清空当前显示的所有记录（热键 F5）。录制文件不受影响，网页端会同步清空。" Padding="12,4" Margin="16,0,0,0" Click="OnClearOverlayRecords" />
                     </StackPanel>
 
-                    <TextBlock Text="外观" Style="{StaticResource Section}" />
+                    <TextBlock Text="按键悬浮窗：外观" Style="{StaticResource Section}" />
                     <TextBlock Text="背景色（点击色块选择）" Style="{StaticResource Label}" />
                     <WrapPanel>
                         <Button Style="{StaticResource Swatch}" ToolTip="把悬浮窗背景色设为这个颜色；要精确控制就用下面的「颜色代码」。" Background="#000000" Tag="000000" Click="OnColorSwatch" />
@@ -265,12 +265,99 @@
 
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <CheckBox Content="锁定（点击穿透、不抢游戏焦点、不可移动）" ToolTip="锁定后鼠标穿透悬浮窗，点到它也不会把游戏切到后台；点击设置里的“解锁”或按热键再拖动。" Style="{StaticResource Option}" IsChecked="{Binding Locked}" />
-                        <CheckBox Content="自动跟随游戏显示/隐藏" ToolTip="检测到游戏进程时自动显示，游戏退出后自动隐藏（进程名在「系统」页设置）。" Style="{StaticResource Option}" IsChecked="{Binding FollowGame}" />
+                        <CheckBox Content="跟随游戏自动显示/隐藏（按键悬浮窗）" ToolTip="检测到游戏进程时自动显示按键悬浮窗，游戏退出后自动隐藏（进程名在「系统」页设置）。" Style="{StaticResource Option}" IsChecked="{Binding FollowGame}" />
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </TabItem>
 
+        <TabItem Header="印章设置" ToolTip="把屏幕上的一个区域实时复制到另一个位置；可独立设置边框、比例，并输出到 OBS。">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12">
+                    <TextBlock Text="印章（屏幕区域映射）" Style="{StaticResource Section}" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                               Text="把游戏内的血条、小地图、技能栏等局部区域复制到更舒服的位置，不改变游戏内 UI。先点「进入编辑模式」框选源区域，再拖动「映」框调整输出位置。&#10;注意：源区域不要与按键悬浮窗或印章输出重叠，否则会捕获到黑块；OBS 请使用下方的 /stamps 浏览器源（不要用窗口采集）。" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="进入编辑模式" Padding="14,4" Click="OnEnterStampEditorClick" />
+                        <Button Content="导入印章默认设置" Padding="12,4" Margin="8,0,0,0" Click="OnImportStampDefaultsClick" ToolTip="导入手动调整好的左下角或右侧布局。" />
+                        <TextBlock Text="{Binding StampCanvasText}" Style="{StaticResource Label}" Margin="12,5,0,5" Opacity="0.75" />
+                    </StackPanel>
+                    <WrapPanel Margin="0,6,0,0">
+                        <CheckBox Content="开启网页输出（与按键显示同步）" ToolTip="和「按键显示 · OBS 输出」共用本地服务；还需要在每个印章上勾选「OBS 网页输出」。" Style="{StaticResource Option}" IsChecked="{Binding WebOverlayEnabled}" />
+                        <CheckBox Content="隐藏印章输出（仅本地）" ToolTip="只隐藏本地输出窗口；OBS 网页输出继续。" Style="{StaticResource Option}" IsChecked="{Binding StampsHidden}" />
+                        <CheckBox Content="跟随游戏自动显示/隐藏" ToolTip="游戏运行时显示本地印章窗口，游戏退出后自动隐藏；OBS 不受影响。" Style="{StaticResource Option}" IsChecked="{Binding StampsFollowGame}" />
+                        <TextBlock Text="刷新率" Style="{StaticResource Label}" Margin="0,5,8,5" />
+                        <ComboBox x:Name="StampFpsBox" Width="130" SelectionChanged="OnStampFpsChanged">
+                            <ComboBoxItem Content="省电 15 FPS" Tag="15" />
+                            <ComboBoxItem Content="标准 30 FPS" Tag="30" />
+                            <ComboBoxItem Content="流畅 60 FPS" Tag="60" />
+                        </ComboBox>
+                    </WrapPanel>
+
+                    <TextBlock Text="OBS 网页地址" Style="{StaticResource Section}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="StampUrlBox" Width="320" IsReadOnly="True" ToolTip="OBS 浏览器源的 URL。" />
+                        <Button Content="复制网址" Padding="12,4" Margin="8,0,0,0" Click="OnCopyStampUrlClick" ToolTip="复制到剪贴板。" />
+                        <Button Content="在浏览器中预览" Padding="12,4" Margin="8,0,0,0" Click="OnOpenStampPreviewClick" ToolTip="先用浏览器看一眼；浏览器里背景会显示成白色或透明，属正常现象。" />
+                    </StackPanel>
+
+                    <TextBlock Text="OBS 设置步骤（单画布）" Style="{StaticResource Section}" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+                        <Run Text="1. 勾选「开启网页输出」，并在至少一个印章上勾选「OBS 网页输出」。" /><LineBreak />
+                        <Run Text="2. OBS → 来源 → 加号 → 「浏览器」→ URL 填上面的地址（和按键显示的 / 是两个源）。" /><LineBreak />
+                        <Run Text="3. 宽高填设置页显示的画布尺寸：" /><Run Text="{Binding StampCanvasSize, Mode=OneWay}" /><Run Text="，不要按单个印章的大小填。" /><LineBreak />
+                        <Run Text="4. 勾「使用自定义帧率」，数值与上面的「印章刷新率」一致（15 / 30 / 60）。" /><LineBreak />
+                        <Run Text="5. 把浏览器源放到游戏采集源上方。画布尺寸随游戏窗口客户区/主屏分辨率刷新；全屏时等于屏幕分辨率，分辨率变化后同步修改 OBS 源。" />
+                    </TextBlock>
+
+                    <TextBlock Text="每个印章的外观" Style="{StaticResource Section}" />
+                    <ItemsControl ItemsSource="{Binding StampRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,6,0,0">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding SizeText}" Opacity="0.75" HorizontalAlignment="Right" />
+                                        </DockPanel>
+                                        <Grid Margin="0,6,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="90" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="比例" Style="{StaticResource Label}" />
+                                            <controls:NumericSlider Grid.Row="0" Grid.Column="1" Minimum="0.25" Maximum="4" Step="0.05" Decimals="2" Value="{Binding Scale}" ToolTip="以输出中心缩放；边框与内边距不跟随。" />
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="边框粗细" Style="{StaticResource Label}" />
+                                            <controls:NumericSlider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="20" Step="1" Value="{Binding BorderThickness}" Suffix="px" ToolTip="0 表示无边框。" />
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="边框不透明度" Style="{StaticResource Label}" />
+                                            <controls:NumericSlider Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="1" Decimals="2" Value="{Binding BorderOpacity}" />
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="圆角" Style="{StaticResource Label}" />
+                                            <controls:NumericSlider Grid.Row="3" Grid.Column="1" Minimum="0" Maximum="48" Step="1" Value="{Binding CornerRadius}" Suffix="px" />
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="内边距" Style="{StaticResource Label}" />
+                                            <controls:NumericSlider Grid.Row="4" Grid.Column="1" Minimum="0" Maximum="48" Step="1" Value="{Binding Padding}" Suffix="px" />
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="画面不透明度" Style="{StaticResource Label}" />
+                                            <controls:NumericSlider Grid.Row="5" Grid.Column="1" Minimum="0.1" Maximum="1" Decimals="2" Value="{Binding ContentOpacity}" ToolTip="只影响映射出的画面，不影响边框。" />
+                                        </Grid>
+                                        <WrapPanel Margin="0,6,0,0">
+                                            <TextBlock Text="边框颜色" Style="{StaticResource Label}" />
+                                            <TextBox Width="90" Text="{Binding BorderColor, UpdateSourceTrigger=LostFocus}" ToolTip="十六进制，例如 #FFFFFF 或 #AARRGGBB。" />
+                                            <CheckBox Content="隐藏本地输出窗口" Style="{StaticResource Option}" Margin="10,5,12,5" IsChecked="{Binding HideLocal}" />
+                                            <CheckBox Content="OBS 网页输出" Style="{StaticResource Option}" Margin="0,5,12,5" IsChecked="{Binding WebEnabled}" />
+                                            <Button Content="将设置应用到全部印章" Padding="10,2" Margin="0,0,6,0" Tag="{Binding}" Click="OnApplyStampToAllClick" ToolTip="把当前印章的外观复制到其他印章；不改变位置与两个开关。" />
+                                            <Button Content="删除" Padding="10,2" Tag="{Binding}" Click="OnDeleteStampClick" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="StampStatusText" Margin="0,8,0,0" TextWrapping="Wrap" Opacity="0.75" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
         <TabItem Header="记录行为" ToolTip="决定悬浮窗“显示什么、怎么合并、计时怎么算”。所有改动立刻生效，不需要保存。">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="12">
@@ -434,36 +521,37 @@
                             <RowDefinition />
                             <RowDefinition />
                             <RowDefinition />
+                            <RowDefinition />
                         </Grid.RowDefinitions>
 
-                        <CheckBox Grid.Row="0" Grid.Column="0" ToolTip="取消勾选＝停用该热键（不会影响别的热键）。" Style="{StaticResource Option}" IsChecked="{Binding ToggleOverlayHotkeyEnabled}" />
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="显示 / 隐藏悬浮窗" Style="{StaticResource Label}" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding ToggleOverlayHotkey}" Width="110" VerticalAlignment="Center" />
-                        <Button Grid.Row="0" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleOverlayHotkey" Click="OnChangeHotkeyClick" />
-
-                        <CheckBox Grid.Row="1" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ToggleLockHotkeyEnabled}" />
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="锁定 / 解锁" Style="{StaticResource Label}" />
-                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding ToggleLockHotkey}" Width="110" VerticalAlignment="Center" />
-                        <Button Grid.Row="1" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleLockHotkey" Click="OnChangeHotkeyClick" />
-
-                        <CheckBox Grid.Row="2" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding OpenSettingsHotkeyEnabled}" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="打开 / 关闭设置" Style="{StaticResource Label}" />
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding OpenSettingsHotkey}" Width="110" VerticalAlignment="Center" />
-                        <Button Grid.Row="2" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="OpenSettingsHotkey" Click="OnChangeHotkeyClick" />
-
-                        <CheckBox Grid.Row="3" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding DebugModeHotkeyEnabled}" />
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="调试模式" Style="{StaticResource Label}" />
-                        <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding DebugModeHotkey}" Width="110" VerticalAlignment="Center" />
-                        <Button Grid.Row="3" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="DebugModeHotkey" Click="OnChangeHotkeyClick" />
-                        <CheckBox Grid.Row="4" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ToggleRecordingHotkeyEnabled}" />
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="开始 / 结束操作录制" Style="{StaticResource Label}" />
-                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding ToggleRecordingHotkey}" Width="110" VerticalAlignment="Center" />
-                        <Button Grid.Row="4" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleRecordingHotkey" Click="OnChangeHotkeyClick" />
-
-                        <CheckBox Grid.Row="5" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ClearRecordsHotkeyEnabled}" />
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="清除悬浮窗记录" Style="{StaticResource Label}" />
-                        <TextBlock Grid.Row="5" Grid.Column="2" Text="{Binding ClearRecordsHotkey}" Width="110" VerticalAlignment="Center" />
-                        <Button Grid.Row="5" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ClearRecordsHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="0" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ToggleRecordingHotkeyEnabled}" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="开始 / 结束操作录制" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding ToggleRecordingHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="0" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleRecordingHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="1" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ClearRecordsHotkeyEnabled}" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="清除悬浮窗记录" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding ClearRecordsHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="1" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ClearRecordsHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="2" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding HideStampsHotkeyEnabled}" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="显示 / 隐藏印章输出" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding HideStampsHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="2" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="HideStampsHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="3" Grid.Column="0" ToolTip="取消勾选＝停用该热键（不会影响别的热键）。" Style="{StaticResource Option}" IsChecked="{Binding ToggleOverlayHotkeyEnabled}" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="显示 / 隐藏按键悬浮窗" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding ToggleOverlayHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="3" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleOverlayHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="4" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding ToggleLockHotkeyEnabled}" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="锁定 / 解锁按键悬浮窗" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding ToggleLockHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="4" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="ToggleLockHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="5" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding OpenSettingsHotkeyEnabled}" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="打开 / 关闭设置" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="5" Grid.Column="2" Text="{Binding OpenSettingsHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="5" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="OpenSettingsHotkey" Click="OnChangeHotkeyClick" />
+                        <CheckBox Grid.Row="6" Grid.Column="0" ToolTip="取消勾选＝停用该热键。" Style="{StaticResource Option}" IsChecked="{Binding DebugModeHotkeyEnabled}" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="调试模式" Style="{StaticResource Label}" />
+                        <TextBlock Grid.Row="6" Grid.Column="2" Text="{Binding DebugModeHotkey}" Width="110" VerticalAlignment="Center" />
+                        <Button Grid.Row="6" Grid.Column="3" Content="改键" ToolTip="点一下后按下想用的键（只认键盘/鼠标）；按 Esc 取消。" Padding="10,2" Tag="DebugModeHotkey" Click="OnChangeHotkeyClick" />
                     </Grid>
                     <TextBlock x:Name="HotkeysStatusText" Margin="0,8,0,0" Opacity="0.85" TextWrapping="Wrap" />
 
@@ -521,7 +609,7 @@
             </ScrollViewer>
         </TabItem>
 
-        <TabItem Header="OBS 输出" ToolTip="给 OBS / 录屏软件用的网页版悬浮窗：用浏览器源加载，背景透明、可自由缩放，主播端和观众看到的是同一份数据。">
+        <TabItem Header="按键显示 · OBS 输出" ToolTip="给 OBS / 录屏软件用的网页版悬浮窗：用浏览器源加载，背景透明、可自由缩放，主播端和观众看到的是同一份数据。">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="12">
                     <TextBlock Text="浏览器源（推荐）" Style="{StaticResource Section}" />

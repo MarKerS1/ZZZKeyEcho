@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ZZZKeyEcho.App.Rendering;
+using ZZZKeyEcho.App.Stamps;
 using ZZZKeyEcho.Core.Config;
 using ZZZKeyEcho.Core.Engine;
 using ZZZKeyEcho.Core.Input;
@@ -13,18 +14,21 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly Action<SettingsChange> _apply;
     private readonly Func<bool> _getDebugMode;
     private readonly Action<bool> _setDebugMode;
+    private readonly Func<string> _applyHotkeys;
 
     public SettingsViewModel(
         AppConfig config,
         Action<SettingsChange> apply,
         IconProvider icons,
         Func<bool> getDebugMode,
-        Action<bool> setDebugMode)
+        Action<bool> setDebugMode,
+        Func<string> applyHotkeys)
     {
         _config = config;
         _apply = apply;
         _getDebugMode = getDebugMode;
         _setDebugMode = setDebugMode;
+        _applyHotkeys = applyHotkeys;
 
         KbmProfile = new ProfileEditorViewModel("键鼠", InputDevice.Kbm, KeyCatalog.Kbm, config.Profiles.Kbm, MappingProfile.CreateDefaultKbm, config, () => apply(SettingsChange.Mapping));
         XboxProfile = new ProfileEditorViewModel("Xbox 手柄", InputDevice.Xbox, KeyCatalog.Xbox, config.Profiles.Xbox, MappingProfile.CreateDefaultXbox, config, () => apply(SettingsChange.Mapping));
@@ -38,7 +42,96 @@ public sealed class SettingsViewModel : ObservableObject
         }
 
         IconRows = iconRows;
+        ReloadStamps();
     }
+
+    public System.Collections.ObjectModel.ObservableCollection<StampItemViewModel> StampRows { get; } = new();
+
+    public bool StampsHidden
+    {
+        get => _config.Stamps.Hidden;
+        set => Set(_config.Stamps.Hidden, value, v => _config.Stamps.Hidden = v, SettingsChange.Stamps);
+    }
+
+    public bool StampsFollowGame
+    {
+        get => _config.Stamps.FollowGame;
+        set => Set(_config.Stamps.FollowGame, value, v => _config.Stamps.FollowGame = v, SettingsChange.Stamps);
+    }
+
+    public int StampsCaptureFps
+    {
+        get => _config.Stamps.CaptureFps;
+        set => Set(_config.Stamps.CaptureFps, value, v => _config.Stamps.CaptureFps = v, SettingsChange.Stamps);
+    }
+
+    public string StampCanvasSize
+    {
+        get
+        {
+            var canvas = MonitorHelper.GetGameClientRect(_config.Input.GameProcess);
+
+            if (canvas.Width < 16 || canvas.Height < 16)
+            {
+                canvas = MonitorHelper.GetPrimary().Bounds;
+            }
+
+            return $"{canvas.Width} × {canvas.Height}";
+        }
+    }
+
+    public string StampCanvasText => $"{StampCanvasSize}（OBS 浏览器源尺寸）";
+
+    public string StampWebUrl => $"http://127.0.0.1:{_config.WebOverlay.Port}/stamps";
+
+    public void RefreshStampCanvas()
+    {
+        OnPropertyChanged(nameof(StampCanvasSize));
+        OnPropertyChanged(nameof(StampCanvasText));
+        OnPropertyChanged(nameof(StampWebUrl));
+    }
+
+    public void RefreshStampFlags()
+    {
+        OnPropertyChanged(nameof(StampsHidden));
+        OnPropertyChanged(nameof(StampsFollowGame));
+        OnPropertyChanged(nameof(StampsCaptureFps));
+    }
+
+    public void ReloadStamps()
+    {
+        StampRows.Clear();
+
+        for (var index = 0; index < _config.Stamps.Items.Count; index++)
+        {
+            StampRows.Add(new StampItemViewModel(
+                _config.Stamps.Items[index],
+                index,
+                () => _apply(SettingsChange.Stamps)));
+        }
+
+        OnPropertyChanged(nameof(StampCanvasText));
+    }
+
+    public void ApplyStampAppearanceToAll()
+    {
+        if (StampRows.Count == 0)
+        {
+            return;
+        }
+
+        var source = StampRows[0];
+
+        foreach (var row in StampRows)
+        {
+            if (!ReferenceEquals(row, source))
+            {
+                row.ApplyAppearanceFrom(source);
+            }
+        }
+    }
+
+    public event EventHandler<string>? HotkeysApplied;
 
     public ProfileEditorViewModel KbmProfile { get; }
 
@@ -161,6 +254,9 @@ public sealed class SettingsViewModel : ObservableObject
     public string ClearRecordsHotkey { get => _config.Hotkeys.ClearRecords; set => Set(_config.Hotkeys.ClearRecords, value, v => _config.Hotkeys.ClearRecords = v, SettingsChange.None); }
     public bool ClearRecordsHotkeyEnabled { get => IsHotkeyEnabled(_config.Hotkeys.ClearRecords); set => SetHotkeyEnabled(value, v => _config.Hotkeys.ClearRecords = v, () => _config.Hotkeys.ClearRecords, "F5", nameof(ClearRecordsHotkey)); }
 
+    public string HideStampsHotkey { get => _config.Hotkeys.HideStamps; set => Set(_config.Hotkeys.HideStamps, value, v => _config.Hotkeys.HideStamps = v, SettingsChange.None); }
+    public bool HideStampsHotkeyEnabled { get => IsHotkeyEnabled(_config.Hotkeys.HideStamps); set => SetHotkeyEnabled(value, v => _config.Hotkeys.HideStamps = v, () => _config.Hotkeys.HideStamps, "F7", nameof(HideStampsHotkey)); }
+
     public bool DebugMode
     {
         get => _getDebugMode();
@@ -194,6 +290,7 @@ public sealed class SettingsViewModel : ObservableObject
             row.Refresh();
         }
 
+        ReloadStamps();
         OnPropertyChanged(string.Empty);
         _apply(SettingsChange.All);
     }
@@ -219,7 +316,15 @@ public sealed class SettingsViewModel : ObservableObject
 
         setter(enabled ? defaultGesture : string.Empty);
         OnPropertyChanged(enabledPropertyName);
+
+        if (enabledPropertyName.EndsWith("Enabled", StringComparison.Ordinal))
+        {
+            OnPropertyChanged(enabledPropertyName[..^"Enabled".Length]);
+        }
+
         _apply(SettingsChange.None);
+        var status = _applyHotkeys();
+        HotkeysApplied?.Invoke(this, status);
     }
 
     private static List<string> SplitProcesses(string text)

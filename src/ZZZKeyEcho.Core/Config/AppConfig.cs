@@ -2,7 +2,7 @@ namespace ZZZKeyEcho.Core.Config;
 
 public sealed class AppConfig
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     public int Version { get; set; } = CurrentVersion;
     public OverlayConfig Overlay { get; set; } = new();
@@ -15,6 +15,7 @@ public sealed class AppConfig
     public UiConfig Ui { get; set; } = new();
     public WebOverlayConfig WebOverlay { get; set; } = new();
     public ActivityConfig Activity { get; set; } = new();
+    public StampsConfig Stamps { get; set; } = new();
 
     public void CopyFrom(AppConfig other)
     {
@@ -64,6 +65,7 @@ public sealed class AppConfig
         Hotkeys.DebugMode = other.Hotkeys.DebugMode;
         Hotkeys.ToggleRecording = other.Hotkeys.ToggleRecording;
         Hotkeys.ClearRecords = other.Hotkeys.ClearRecords;
+        Hotkeys.HideStamps = other.Hotkeys.HideStamps;
 
         Profiles = other.Profiles;
         IconOverrides = new Dictionary<string, string>(other.IconOverrides);
@@ -84,6 +86,11 @@ public sealed class AppConfig
         Activity.FloatY = other.Activity.FloatY;
         Activity.FloatSize = other.Activity.FloatSize;
         Activity.FloatOpacity = other.Activity.FloatOpacity;
+
+        Stamps.Hidden = other.Stamps.Hidden;
+        Stamps.FollowGame = other.Stamps.FollowGame;
+        Stamps.CaptureFps = other.Stamps.CaptureFps;
+        Stamps.Items = other.Stamps.Items.Select(item => item.Clone()).ToList();
     }
     public void EnsureDefaults()
     {
@@ -97,17 +104,24 @@ public sealed class AppConfig
         Ui ??= new UiConfig();
         WebOverlay ??= new WebOverlayConfig();
         Activity ??= new ActivityConfig();
+        Stamps ??= new StampsConfig();
         IconOverrides ??= new Dictionary<string, string>();
         Input.GameProcess ??= new List<string>();
         Profiles.Kbm ??= MappingProfile.CreateDefaultKbm();
         Profiles.Xbox ??= MappingProfile.CreateDefaultXbox();
         Profiles.Ps ??= MappingProfile.CreateDefaultPs();
+        Stamps.Items ??= new List<StampConfig>();
+        if (Stamps.CaptureFps is not (15 or 30 or 60))
+        {
+            Stamps.CaptureFps = 30;
+        }
         Hotkeys.ToggleOverlay ??= "F8";
         Hotkeys.ToggleLock ??= "F9";
         Hotkeys.OpenSettings ??= "F10";
         Hotkeys.DebugMode ??= "F11";
         Hotkeys.ToggleRecording ??= "F2";
         Hotkeys.ClearRecords ??= "F5";
+        Hotkeys.HideStamps ??= "F7";
 
         if (previousVersion < 3 && Hotkeys.ToggleRecording == "F12")
         {

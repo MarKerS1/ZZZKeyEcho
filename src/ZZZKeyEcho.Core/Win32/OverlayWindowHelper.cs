@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 
@@ -13,6 +14,24 @@ public static class OverlayWindowHelper
         }
 
         SetLocked(window, locked);
+        SetTopmost(window);
+    }
+
+    public static void SetTopmost(Window window)
+    {
+        var handle = new WindowInteropHelper(window).Handle;
+
+        if (handle != IntPtr.Zero)
+        {
+            SetWindowPos(
+                handle,
+                new IntPtr(-1),
+                0,
+                0,
+                0,
+                0,
+                0x0001 | 0x0002 | 0x0010);
+        }
     }
 
     public static void SetLocked(Window window, bool locked)
@@ -36,7 +55,18 @@ public static class OverlayWindowHelper
         }
 
         NativeMethods.SetWindowLongPtr(handle, NativeMethods.GWL_EXSTYLE, new IntPtr(exStyle));
+        SetTopmost(window);
     }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int x,
+        int y,
+        int width,
+        int height,
+        uint flags);
 
     private static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {

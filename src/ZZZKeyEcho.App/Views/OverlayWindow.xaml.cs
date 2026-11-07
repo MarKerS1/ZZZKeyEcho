@@ -273,6 +273,7 @@ public partial class OverlayWindow : Window
         RecordsHost.Opacity = Math.Clamp(overlay.IconOpacity, 0, 1);
 
         OverlayWindowHelper.SetLocked(this, overlay.Locked);
+        OverlayWindowHelper.SetTopmost(this);
         OverlayCaptureSupport.MakeCapturable(this);
         UnlockFrame.Visibility = overlay.Locked ? Visibility.Collapsed : Visibility.Visible;
         ResizeGrip.Visibility = UnlockFrame.Visibility;

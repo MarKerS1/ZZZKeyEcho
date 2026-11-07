@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using ZZZKeyEcho.Core.Activity;
 using ZZZKeyEcho.Core.Config;
+using ZZZKeyEcho.Core.Win32;
 
 namespace ZZZKeyEcho.App.Views;
 
@@ -55,6 +56,7 @@ public partial class RecordButtonWindow : Window
         Top = activity.FloatY >= 0 ? activity.FloatY : area.Bottom - Height - 48;
 
         Visibility = activity.FloatButtonEnabled ? Visibility.Visible : Visibility.Collapsed;
+        OverlayWindowHelper.SetTopmost(this);
         UpdateState();
     }
 
@@ -78,6 +80,12 @@ public partial class RecordButtonWindow : Window
         Ball.Stroke = recording
             ? new SolidColorBrush(Color.FromArgb(0xCC, 0xFF, 0x5A, 0x5A))
             : new SolidColorBrush(Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF));
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        OverlayWindowHelper.Attach(this, false);
     }
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)

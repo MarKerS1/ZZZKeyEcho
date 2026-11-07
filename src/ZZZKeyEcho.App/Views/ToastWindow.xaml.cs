@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Threading;
+using ZZZKeyEcho.Core.Win32;
 
 namespace ZZZKeyEcho.App.Views;
 
@@ -28,6 +29,12 @@ public partial class ToastWindow : Window
         _timer.Stop();
         _timer.Interval = TimeSpan.FromSeconds(seconds);
         _timer.Start();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        OverlayWindowHelper.Attach(this, true);
     }
 
     private void PositionCenter()

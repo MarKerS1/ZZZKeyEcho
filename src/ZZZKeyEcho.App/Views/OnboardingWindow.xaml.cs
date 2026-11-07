@@ -12,6 +12,7 @@ public partial class OnboardingWindow : Window
         HotkeyText.Text =
             $"· 开始 / 结束操作录制：{Display(config.Hotkeys.ToggleRecording)}\n" +
             $"· 清除悬浮窗记录：{Display(config.Hotkeys.ClearRecords)}\n" +
+            $"· 显示/隐藏印章输出：{Display(config.Hotkeys.HideStamps)}\n" +
             $"· 显示 / 隐藏悬浮窗：{Display(config.Hotkeys.ToggleOverlay)}\n" +
             $"· 锁定 / 解锁悬浮窗：{Display(config.Hotkeys.ToggleLock)}\n" +
             $"· 打开 / 关闭设置：{Display(config.Hotkeys.OpenSettings)}\n" +

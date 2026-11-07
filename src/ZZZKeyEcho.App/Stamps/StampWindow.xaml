@@ -1,0 +1,22 @@
+<Window x:Class="ZZZKeyEcho.App.Stamps.StampWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ZZZKeyEcho 印章"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        IsHitTestVisible="False"
+        ResizeMode="NoResize"
+        SizeToContent="Manual">
+    <Border x:Name="RootBorder"
+            Background="Transparent"
+            BorderThickness="0"
+            CornerRadius="0">
+        <Image x:Name="FrameImage"
+               Stretch="Fill"
+               SnapsToDevicePixels="True" />
+    </Border>
+</Window>

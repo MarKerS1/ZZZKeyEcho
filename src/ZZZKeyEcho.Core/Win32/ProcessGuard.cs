@@ -40,7 +40,7 @@ public static class ProcessGuard
                 }
                 catch (Exception)
                 {
-                    matches = true;
+                    matches = false;
                 }
 
                 if (!matches)

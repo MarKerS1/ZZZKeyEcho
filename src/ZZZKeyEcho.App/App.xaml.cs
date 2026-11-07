@@ -6,6 +6,7 @@ using H.NotifyIcon;
 using ZZZKeyEcho.App.Rendering;
 using ZZZKeyEcho.App.Views;
 using ZZZKeyEcho.App.Updates;
+using ZZZKeyEcho.App.Stamps;
 using ZZZKeyEcho.Core.Activity;
 using ZZZKeyEcho.Core.Config;
 using ZZZKeyEcho.Core.Input;
@@ -22,6 +23,7 @@ public partial class App : Application
     private const string HotkeyDebugMode = "debugMode";
     private const string HotkeyToggleRecording = "toggleRecording";
     private const string HotkeyClearRecords = "clearRecords";
+    private const string HotkeyHideStamps = "hideStamps";
 
     private AppConfig _config = null!;
     private SystemClock _clock = null!;
@@ -36,10 +38,13 @@ public partial class App : Application
     private WebOverlayServer _webOverlay = null!;
     private ActivityRecorder _activity = null!;
     private RecordButtonWindow? _recordButton;
+    private StampManager? _stamps;
+    private StampEditorWindow? _stampEditor;
     private ToastWindow? _toast;
     private bool _lastRecordingState;
     private DispatcherTimer? _renderingTimer;
     private bool _debugMode;
+    private bool _overlayHiddenByUser;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -102,10 +107,16 @@ public partial class App : Application
         _activity.Changed += OnActivityChanged;
         _lastRecordingState = _activity.IsRecording;
 
-        _webOverlay = new WebOverlayServer(_config, _pipeline.Engine, _icons, Path.Combine(AppContext.BaseDirectory, "assets"));
-        _webOverlay.Sync();
-
         _overlay = new OverlayWindow(_config, _pipeline.Engine, _clock, _icons);
+        _stamps = new StampManager(_config, () => _pipeline.GameMonitor.IsRunning);
+        _webOverlay = new WebOverlayServer(
+            _config,
+            _pipeline.Engine,
+            _icons,
+            Path.Combine(AppContext.BaseDirectory, "assets"),
+            _stamps,
+            () => _pipeline.GameMonitor.IsRunning);
+        _webOverlay.Sync();
 
         if (!_config.WebOverlay.HideLocalOverlay)
         {
@@ -130,6 +141,7 @@ public partial class App : Application
         _hotkeys.Register(HotkeyDebugMode, _config.Hotkeys.DebugMode);
         _hotkeys.Register(HotkeyToggleRecording, _config.Hotkeys.ToggleRecording);
         _hotkeys.Register(HotkeyClearRecords, _config.Hotkeys.ClearRecords);
+        _hotkeys.Register(HotkeyHideStamps, _config.Hotkeys.HideStamps);
 
         _trayIcon = CreateTrayIcon();
         _toast = new ToastWindow();
@@ -150,10 +162,12 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _activity.Changed -= OnActivityChanged;
+        _stampEditor?.Close();
         _toast?.Close();
+        _webOverlay.Dispose();
+        _stamps?.Dispose();
         _activity?.Stop();
         JsonStore.Save(_config);
-        _webOverlay.Dispose();
         _pipeline.Dispose();
         _hotkeys.Dispose();
         _trayIcon.Dispose();
@@ -164,14 +178,6 @@ public partial class App : Application
     {
         var menu = new ContextMenu();
 
-        var showItem = new MenuItem { Header = "显示 / 隐藏悬浮窗" };
-        showItem.Click += (_, _) => ToggleOverlay();
-        menu.Items.Add(showItem);
-
-        var lockItem = new MenuItem { Header = "锁定 / 解锁悬浮窗" };
-        lockItem.Click += (_, _) => ToggleLock();
-        menu.Items.Add(lockItem);
-
         var recordItem = new MenuItem { Header = "开始 / 结束操作录制" };
         recordItem.Click += (_, _) => _activity.Toggle();
         menu.Items.Add(recordItem);
@@ -179,6 +185,23 @@ public partial class App : Application
         var clearRecordsItem = new MenuItem { Header = "清除悬浮窗记录" };
         clearRecordsItem.Click += (_, _) => ClearOverlayRecords();
         menu.Items.Add(clearRecordsItem);
+
+        var hideStampsItem = new MenuItem { Header = "显示 / 隐藏印章输出" };
+        hideStampsItem.Click += (_, _) => ToggleHideStamps();
+        menu.Items.Add(hideStampsItem);
+
+        var showItem = new MenuItem { Header = "显示 / 隐藏按键悬浮窗" };
+        showItem.Click += (_, _) => ToggleOverlay();
+        menu.Items.Add(showItem);
+
+        var lockItem = new MenuItem { Header = "锁定 / 解锁按键悬浮窗" };
+        lockItem.Click += (_, _) => ToggleLock();
+        menu.Items.Add(lockItem);
+
+        var settingsItem = new MenuItem { Header = "打开 / 关闭设置" };
+        settingsItem.Click += (_, _) => ToggleSettings();
+        menu.Items.Add(settingsItem);
+
         var debugItem = new MenuItem { Header = "调试模式", IsCheckable = true };
         debugItem.Click += (_, _) =>
         {
@@ -187,15 +210,11 @@ public partial class App : Application
         };
         menu.Items.Add(debugItem);
 
+        menu.Items.Add(new Separator());
+
         var debugPanelItem = new MenuItem { Header = "调试面板" };
         debugPanelItem.Click += (_, _) => ShowDebugPanel();
         menu.Items.Add(debugPanelItem);
-
-        menu.Items.Add(new Separator());
-
-        var settingsItem = new MenuItem { Header = "打开设置" };
-        settingsItem.Click += (_, _) => ShowSettings();
-        menu.Items.Add(settingsItem);
 
         menu.Items.Add(new Separator());
 
@@ -218,6 +237,11 @@ public partial class App : Application
 
     private void OnHotkeyPressed(object? sender, string name)
     {
+        if (_stampEditor is not null)
+        {
+            return;
+        }
+
         switch (name)
         {
             case HotkeyToggleOverlay:
@@ -238,22 +262,47 @@ public partial class App : Application
             case HotkeyClearRecords:
                 ClearOverlayRecords();
                 break;
+            case HotkeyHideStamps:
+                ToggleHideStamps();
+                break;
         }
     }
 
+    private void ToggleHideStamps()
+    {
+        _config.Stamps.Hidden = !_config.Stamps.Hidden;
+        _stamps?.ApplyVisibility();
+        ShowToast(_config.Stamps.Hidden ? "印章输出已隐藏" : "印章输出已显示");
+    }
+
+    private void ShowToast(string message) => _toast?.ShowMessage(message, 3);
+
     private void ToggleOverlay()
     {
+        if (_stampEditor is not null)
+        {
+            return;
+        }
+
         if (_overlay.IsVisible)
         {
             _overlay.Hide();
+            _overlayHiddenByUser = true;
+            ShowToast("按键悬浮窗已隐藏");
         }
         else
         {
             _overlay.Show();
+            _overlayHiddenByUser = false;
+            ShowToast("按键悬浮窗已显示");
         }
     }
 
-    private void ToggleLock() => _overlay.SetLocked(!_config.Overlay.Locked);
+    private void ToggleLock()
+    {
+        _overlay.SetLocked(!_config.Overlay.Locked);
+        ShowToast(_config.Overlay.Locked ? "按键悬浮窗已锁定" : "按键悬浮窗已解锁");
+    }
 
     private void ToggleDebugMode() => SetDebugMode(!_debugMode);
 
@@ -271,6 +320,7 @@ public partial class App : Application
                 _overlay.Show();
             }
 
+            _overlayHiddenByUser = false;
             ShowPanelWindow();
         }
         else
@@ -282,6 +332,7 @@ public partial class App : Application
         _trayIcon.ShowNotification(
             "ZZZKeyEcho",
             enabled ? "调试模式已开启（前台门控已解除）" : "调试模式已关闭（调试记录已清空）");
+        ShowToast(enabled ? "调试模式已开启" : "调试模式已关闭");
     }
 
     private void ShowDebugPanel()
@@ -344,10 +395,12 @@ public partial class App : Application
         if (_settings is { IsVisible: true })
         {
             _settings.Hide();
+            ShowToast("设置已关闭");
             return;
         }
 
         ShowSettings();
+        ShowToast("设置已打开");
     }
 
     private void ShowSettings()
@@ -361,12 +414,51 @@ public partial class App : Application
                 _icons,
                 ApplyHotkeys,
                 SetDebugMode,
-                _activity);
+                _activity,
+                ShowStampEditor,
+                () => _stamps?.WebUrl ?? string.Empty);
             _settings.Closed += (_, _) => _settings = null;
         }
 
+        _settings.RefreshStamps();
         _settings.Show();
         _settings.Activate();
+    }
+
+    private void ShowStampEditor()
+    {
+        if (_stampEditor is not null)
+        {
+            _stampEditor.Activate();
+            return;
+        }
+
+        _settings?.Hide();
+        _overlay.Hide();
+        _recordButton?.Hide();
+        _stamps?.SetEditing(true);
+
+        var editor = new StampEditorWindow(_config);
+        _stampEditor = editor;
+
+        editor.LayoutSaved += (_, _) =>
+        {
+            _overlay.ApplyConfiguration();
+            _stamps?.ApplyAll();
+            _webOverlay.Sync();
+            _settings?.RefreshStamps();
+        };
+
+        editor.Closed += (_, _) =>
+        {
+            _stampEditor = null;
+            _stamps?.SetEditing(false);
+            UpdateOverlayVisibility();
+            ApplyActivitySettings();
+        };
+
+        editor.Show();
+        editor.Activate();
     }
 
     private string ApplyHotkeys()
@@ -411,6 +503,12 @@ public partial class App : Application
             failures.Add($"清除悬浮窗记录（{_config.Hotkeys.ClearRecords}）");
         }
 
+        if (!string.IsNullOrEmpty(_config.Hotkeys.HideStamps)
+            && !_hotkeys.Register(HotkeyHideStamps, _config.Hotkeys.HideStamps))
+        {
+            failures.Add($"隐藏印章（{_config.Hotkeys.HideStamps}）");
+        }
+
         return failures.Count == 0
             ? "热键已应用，全部注册成功。"
             : "以下热键被其他程序占用，注册失败：" + string.Join("、", failures);
@@ -432,6 +530,7 @@ public partial class App : Application
     private void ClearOverlayRecords()
     {
         _pipeline.Engine.Clear();
+        ShowToast("悬浮窗记录已清除");
     }
 
     private async void CheckForUpdatesOnStartup()
@@ -489,15 +588,29 @@ public partial class App : Application
             ApplyActivitySettings();
         }
 
+        if (change.HasFlag(SettingsChange.Stamps))
+        {
+            _stamps?.ApplyAll();
+        }
+        else
+        {
+            _stamps?.ApplyVisibility();
+        }
+
         UpdateOverlayVisibility();
     }
 
     private void OnGameProcessChanged(object? sender, EventArgs e) =>
-        Dispatcher.BeginInvoke(UpdateOverlayVisibility);
+        Dispatcher.BeginInvoke(() =>
+        {
+            _stamps?.SetGameRunning(_pipeline.GameMonitor.IsRunning);
+            UpdateOverlayVisibility();
+        });
 
     private void UpdateOverlayVisibility()
     {
-        var shouldShow = !_config.WebOverlay.HideLocalOverlay
+        var shouldShow = !_overlayHiddenByUser
+            && !_config.WebOverlay.HideLocalOverlay
             && _state.RecordingEnabled
             && (!_config.Overlay.FollowGame || _pipeline.GameMonitor.IsRunning || _debugMode);
 

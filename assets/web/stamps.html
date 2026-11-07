@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>ZZZKeyEcho 印章</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: transparent; overflow: hidden; }
+  #canvas { position: relative; background: transparent; overflow: hidden; }
+  .stamp { position: absolute; box-sizing: border-box; background: transparent; overflow: hidden; }
+  .stamp img { display: block; width: 100%; height: 100%; object-fit: fill; }
+</style>
+</head>
+<body>
+<div id="canvas"></div>
+<script>
+  const canvas = document.getElementById('canvas');
+  const nodes = new Map();
+  let lastWidth = 0;
+  let lastHeight = 0;
+
+  function rgba(hex, alpha) {
+    let value = (hex || '#FFFFFF').replace('#', '');
+    if (value.length === 8) value = value.slice(2);
+    if (value.length !== 6) value = 'FFFFFF';
+    const r = parseInt(value.slice(0, 2), 16);
+    const g = parseInt(value.slice(2, 4), 16);
+    const b = parseInt(value.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
+  }
+
+  async function tick() {
+    try {
+      const response = await fetch('/stamps/state', { cache: 'no-store' });
+      if (!response.ok) return;
+      const state = await response.json();
+      canvas.style.visibility = state.visible === false ? 'hidden' : 'visible';
+      const width = Math.max(1, state.canvas.width || 1);
+      const height = Math.max(1, state.canvas.height || 1);
+      if (width !== lastWidth || height !== lastHeight) {
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        lastWidth = width;
+        lastHeight = height;
+      }
+
+      const alive = new Set();
+      for (const stamp of state.stamps || []) {
+        alive.add(stamp.index);
+        let node = nodes.get(stamp.index);
+        if (node && node.dataset.key !== stamp.key) {
+          node.remove();
+          nodes.delete(stamp.index);
+          node = null;
+        }
+        if (!node) {
+          node = document.createElement('div');
+          node.className = 'stamp';
+          node.dataset.key = stamp.key;
+          node.dataset.started = String(Date.now());
+          const img = document.createElement('img');
+          img.src = `/stamp/${stamp.index}/stream`;
+          img.onerror = () => {
+            node.remove();
+            nodes.delete(stamp.index);
+          };
+          node.appendChild(img);
+          canvas.appendChild(node);
+          nodes.set(stamp.index, node);
+        }
+        const streamImage = node.querySelector('img');
+        if (streamImage && streamImage.naturalWidth === 0
+            && Date.now() - Number(node.dataset.started) > 4000) {
+          node.remove();
+          nodes.delete(stamp.index);
+          continue;
+        }
+        const inset = stamp.borderThickness + stamp.padding;
+        node.style.left = (stamp.x - inset) + 'px';
+        node.style.top = (stamp.y - inset) + 'px';
+        node.style.width = (stamp.width + (inset * 2)) + 'px';
+        node.style.height = (stamp.height + (inset * 2)) + 'px';
+        node.style.padding = stamp.padding + 'px';
+        node.style.borderStyle = stamp.borderThickness > 0 ? 'solid' : 'none';
+        node.style.borderWidth = stamp.borderThickness + 'px';
+        node.style.borderColor = rgba(stamp.borderColor, stamp.borderOpacity);
+        node.style.borderRadius = stamp.cornerRadius + 'px';
+        const image = node.querySelector('img');
+        if (image) image.style.opacity = Math.max(0, Math.min(1, stamp.contentOpacity));
+      }
+
+      for (const [index, node] of [...nodes]) {
+        if (!alive.has(index)) {
+          node.remove();
+          nodes.delete(index);
+        }
+      }
+    } catch (e) {
+      // 游戏未运行或服务暂时未就绪时保持上一帧。
+    }
+  }
+
+  tick();
+  setInterval(tick, 500);
+</script>
+</body>
+</html>

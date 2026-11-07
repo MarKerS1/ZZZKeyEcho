@@ -49,7 +49,8 @@
     "openSettings": "F10",
     "debugMode": "F11",
     "toggleRecording": "F2",
-    "clearRecords": "F5"
+    "clearRecords": "F5",
+    "hideStamps": "F7"
   },
   "profiles": {
     "kbm": {
@@ -403,5 +404,11 @@
     "enabled": false,
     "hideLocalOverlay": false,
     "port": 15965
+  },
+  "stamps": {
+    "hidden": false,
+    "followGame": false,
+    "captureFps": 30,
+    "items": []
   }
 }

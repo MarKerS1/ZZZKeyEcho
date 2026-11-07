@@ -32,27 +32,34 @@ public partial class SettingsWindow : Window
         IconProvider icons,
         Func<string> applyHotkeys,
         Action<bool> setDebugMode,
-        ActivityRecorder recorder)
+        ActivityRecorder recorder,
+        Action enterStampEditor,
+        Func<string> stampUrl)
     {
         _state = state;
         _status = statusProvider;
         _flashOverlay = flashOverlay;
         _icons = icons;
         _applyHotkeys = applyHotkeys;
+        _enterStampEditor = enterStampEditor;
+        _stampUrl = stampUrl;
 
         _viewModel = new SettingsViewModel(
             state.Config,
             ApplyChanges,
             icons,
             () => state.Pipeline.DebugMode,
-            setDebugMode);
+            setDebugMode,
+            applyHotkeys);
 
         InitializeComponent();
         DataContext = _viewModel;
+        _viewModel.HotkeysApplied += (_, status) => HotkeysStatusText.Text = status;
         RecordingCheckBox.DataContext = _state;
         Topmost = _viewModel.SettingsTopMost;
         UpdateStatus();
         InitializeActivity(recorder);
+        InitializeStamps();
 
         state.Pipeline.RawEvent += OnRawEvent;
         Closed += (_, _) => state.Pipeline.RawEvent -= OnRawEvent;
@@ -88,11 +95,18 @@ public partial class SettingsWindow : Window
             $"屏幕工作区：{area.Width:0} × {area.Height:0}（悬浮窗当前 {_viewModel.OverlayWidth:0} × {_viewModel.OverlayHeight:0}）";
 
         _viewModel.SyncOverlayGeometry();
+        _viewModel.RefreshStampCanvas();
+        _viewModel.RefreshStampFlags();
 
         var url = $"http://127.0.0.1:{_viewModel.WebOverlayPort}/";
         if (WebUrlBox.Text != url)
         {
             WebUrlBox.Text = url;
+        }
+
+        if (StampUrlBox.Text != _viewModel.StampWebUrl)
+        {
+            StampUrlBox.Text = _viewModel.StampWebUrl;
         }
 
         var size = $"{_viewModel.OverlayWidth:0} × {_viewModel.OverlayHeight:0}";
@@ -270,9 +284,20 @@ public partial class SettingsWindow : Window
             case "ClearRecordsHotkey":
                 _viewModel.ClearRecordsHotkey = gesture;
                 break;
+            case "HideStampsHotkey":
+                _viewModel.HideStampsHotkey = gesture;
+                break;
         }
 
-        HotkeysStatusText.Text = _applyHotkeys();
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+        {
+            var result = _applyHotkeys();
+
+            if (IsLoaded)
+            {
+                HotkeysStatusText.Text = result;
+            }
+        });
     }
 
     private void HandleHotkeyCapture(InputEvent inputEvent)

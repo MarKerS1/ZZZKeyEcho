@@ -12,7 +12,8 @@ public enum SettingsChange
     Rendering = 2,
     Mapping = 4,
     Activity = 8,
-    All = OverlayStyle | Rendering | Mapping | Activity,
+    Stamps = 16,
+    All = OverlayStyle | Rendering | Mapping | Activity | Stamps,
 }
 
 public sealed class AppState : INotifyPropertyChanged

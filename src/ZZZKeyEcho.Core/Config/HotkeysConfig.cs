@@ -8,4 +8,5 @@ public sealed class HotkeysConfig
     public string DebugMode { get; set; } = "F11";
     public string ToggleRecording { get; set; } = "F2";
     public string ClearRecords { get; set; } = "F5";
+    public string HideStamps { get; set; } = "F7";
 }
