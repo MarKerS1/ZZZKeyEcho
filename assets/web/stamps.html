@@ -17,6 +17,7 @@
   const nodes = new Map();
   let lastWidth = 0;
   let lastHeight = 0;
+  let refreshing = false;
 
   function rgba(hex, alpha) {
     let value = (hex || '#FFFFFF').replace('#', '');
@@ -26,6 +27,32 @@
     const g = parseInt(value.slice(2, 4), 16);
     const b = parseInt(value.slice(4, 6), 16);
     return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
+  }
+
+  async function loadFrame(img, index) {
+    try {
+      const response = await fetch(`/stamp/${index}/frame.jpg?t=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) return;
+      const blob = await response.blob();
+      if (!blob.size) return;
+      const url = URL.createObjectURL(blob);
+      const previous = img.dataset.url;
+      img.src = url;
+      img.dataset.url = url;
+      if (previous) URL.revokeObjectURL(previous);
+    } catch (e) {
+      // 游戏未运行或暂时没有帧时保留上一帧。
+    }
+  }
+
+  async function refreshFrames() {
+    if (refreshing) return;
+    refreshing = true;
+    try {
+      await Promise.all([...nodes.values()].map(node => loadFrame(node.querySelector('img'), node.dataset.index)));
+    } finally {
+      refreshing = false;
+    }
   }
 
   async function tick() {
@@ -47,33 +74,25 @@
       for (const stamp of state.stamps || []) {
         alive.add(stamp.index);
         let node = nodes.get(stamp.index);
+
         if (node && node.dataset.key !== stamp.key) {
           node.remove();
           nodes.delete(stamp.index);
           node = null;
         }
+
         if (!node) {
           node = document.createElement('div');
           node.className = 'stamp';
           node.dataset.key = stamp.key;
-          node.dataset.started = String(Date.now());
+          node.dataset.index = String(stamp.index);
           const img = document.createElement('img');
-          img.src = `/stamp/${stamp.index}/stream`;
-          img.onerror = () => {
-            node.remove();
-            nodes.delete(stamp.index);
-          };
           node.appendChild(img);
           canvas.appendChild(node);
           nodes.set(stamp.index, node);
+          loadFrame(img, stamp.index);
         }
-        const streamImage = node.querySelector('img');
-        if (streamImage && streamImage.naturalWidth === 0
-            && Date.now() - Number(node.dataset.started) > 4000) {
-          node.remove();
-          nodes.delete(stamp.index);
-          continue;
-        }
+
         const inset = stamp.borderThickness + stamp.padding;
         node.style.left = (stamp.x - inset) + 'px';
         node.style.top = (stamp.y - inset) + 'px';
@@ -84,6 +103,7 @@
         node.style.borderWidth = stamp.borderThickness + 'px';
         node.style.borderColor = rgba(stamp.borderColor, stamp.borderOpacity);
         node.style.borderRadius = stamp.cornerRadius + 'px';
+
         const image = node.querySelector('img');
         if (image) image.style.opacity = Math.max(0, Math.min(1, stamp.contentOpacity));
       }
@@ -95,12 +115,13 @@
         }
       }
     } catch (e) {
-      // 游戏未运行或服务暂时未就绪时保持上一帧。
+      // 服务未就绪时保持上一帧。
     }
   }
 
-  tick();
+  setInterval(refreshFrames, 66);
   setInterval(tick, 500);
+  tick();
 </script>
 </body>
 </html>

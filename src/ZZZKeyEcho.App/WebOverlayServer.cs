@@ -182,35 +182,6 @@ public sealed class WebOverlayServer : IDisposable
 
         var path = context.Request.Url?.AbsolutePath ?? "/";
 
-        if (path.StartsWith("/stamp/", StringComparison.Ordinal)
-            && path.EndsWith("/stream", StringComparison.Ordinal))
-        {
-            if (listener.IsListening)
-            {
-                listener.BeginGetContext(OnContext, listener);
-            }
-
-            try
-            {
-                StreamStamp(context, path);
-            }
-            catch (Exception)
-            {
-            }
-            finally
-            {
-                try
-                {
-                    context.Response.Close();
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            return;
-        }
-
         try
         {
             Handle(context);
@@ -266,6 +237,13 @@ public sealed class WebOverlayServer : IDisposable
             return;
         }
 
+        if (path.StartsWith("/stamp/", StringComparison.Ordinal)
+            && path.EndsWith("/frame.jpg", StringComparison.Ordinal))
+        {
+            WriteStampFrame(context, path);
+            return;
+        }
+
         if (path.StartsWith("/icons/", StringComparison.Ordinal))
         {
             var name = Path.GetFileNameWithoutExtension(
@@ -315,7 +293,7 @@ public sealed class WebOverlayServer : IDisposable
         return JsonSerializer.Serialize(state, JsonOptions);
     }
 
-    private void StreamStamp(HttpListenerContext context, string path)
+    private void WriteStampFrame(HttpListenerContext context, string path)
     {
         if (_stamps is null)
         {
@@ -332,28 +310,14 @@ public sealed class WebOverlayServer : IDisposable
             return;
         }
 
-        var response = context.Response;
-        response.ContentType = "multipart/x-mixed-replace; boundary=frame";
-        response.SendChunked = true;
-        var output = response.OutputStream;
-        var header = Encoding.ASCII;
-
-        while (_listener?.IsListening == true)
+        if (!_stamps.TryGetJpeg(index, out var jpeg))
         {
-            if (!_stamps.TryGetJpeg(index, out var jpeg))
-            {
-                Thread.Sleep(15);
-                continue;
-            }
-
-            var head = header.GetBytes(
-                $"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: {jpeg.Length}\r\n\r\n");
-            output.Write(head, 0, head.Length);
-            output.Write(jpeg, 0, jpeg.Length);
-            output.Write(header.GetBytes("\r\n"), 0, 2);
-            output.Flush();
-            Thread.Sleep(Math.Max(10, 1000 / Math.Max(1, _config.Stamps.CaptureFps)));
+            context.Response.StatusCode = 404;
+            return;
         }
+
+        context.Response.Headers["Cache-Control"] = "no-store";
+        Write(context, "image/jpeg", jpeg);
     }
 
     private static void Write(HttpListenerContext context, string contentType, byte[] body)
