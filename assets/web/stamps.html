@@ -18,6 +18,16 @@
   let lastWidth = 0;
   let lastHeight = 0;
   let refreshing = false;
+  let frameTimer = 0;
+  let frameInterval = 0;
+
+  function scheduleFrames(fps) {
+    const interval = Math.max(16, Math.round(1000 / Math.max(1, fps || 30)));
+    if (interval === frameInterval) return;
+    frameInterval = interval;
+    if (frameTimer) clearInterval(frameTimer);
+    frameTimer = setInterval(refreshFrames, interval);
+  }
 
   function rgba(hex, alpha) {
     let value = (hex || '#FFFFFF').replace('#', '');
@@ -60,6 +70,7 @@
       const response = await fetch('/stamps/state', { cache: 'no-store' });
       if (!response.ok) return;
       const state = await response.json();
+      scheduleFrames(state.fps);
       canvas.style.visibility = state.visible === false ? 'hidden' : 'visible';
       const width = Math.max(1, state.canvas.width || 1);
       const height = Math.max(1, state.canvas.height || 1);
@@ -119,7 +130,6 @@
     }
   }
 
-  setInterval(refreshFrames, 66);
   setInterval(tick, 500);
   tick();
 </script>
